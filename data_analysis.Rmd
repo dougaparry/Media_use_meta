@@ -27,3 +27,40 @@ pacman::p_load(tidyverse, dplyr, ggplot2, robumeta, metafor, MAc, clubSandwich, 
 raw_data <- read_csv("raw_data/pilot.csv", na = "NA")
 raw_data <- raw_data %>% mutate(id = paste0("ID",row_number())) #create ID nums
 ```
+
+## transform column datatypes
+```{r}
+raw_data$sr_outcome_type <- factor(raw_data$sr_outcome_type)
+raw_data$medium <- factor(raw_data$medium)
+raw_data$use_form <- factor(raw_data$use_form)
+raw_data$population <- factor(raw_data$population)
+raw_data$log_source <- factor(raw_data$log_source)
+raw_data$sr_form <- factor(raw_data$sr_form)
+raw_data$Measure_Type <- factor(raw_data$Measure_Type)
+```
+
+############## Section 3: Create Datasets ############## 
+
+# Dataset 1: For correlational analysis 1 (use)
+
+```{r}
+#note to self: add whatever selection/cutting code is needed here
+use_corr_data <- raw_data
+```
+
+# Dataset 2: For correlational analysis 2 (prob use)
+
+```{r}
+#note to self: add whatever selection/cutting code is needed here
+prob_use_corr_data <- raw_data
+```
+
+# Dataset 3: For analysis of measurement 'accuracy'
+```{r}
+#note to self: add whatever selection/cutting code is needed here [for now just test with ID11, ID12, ID15, ID16, and ID17]
+acc_data <- raw_data %>% 
+  filter(sr_form =="SINGLE") %>% 
+  filter(id %in% c("ID11", "ID12", "ID15", "ID16", "ID17"))
+```
+
+############## Section 4: Effect Size Calculations ############## 
