@@ -20,3 +20,10 @@ library(pacman)
 pacman::p_load(tidyverse, dplyr, ggplot2, robumeta, metafor, MAc, clubSandwich, multcomp)
 ```
 
+############## Section 2: Data Processing ############## 
+
+## Import raw data file
+```{r}
+raw_data <- read_csv("raw_data/pilot.csv", na = "NA")
+raw_data <- raw_data %>% mutate(id = paste0("ID",row_number())) #create ID nums
+```
