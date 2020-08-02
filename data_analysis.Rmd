@@ -19,7 +19,7 @@ pacman::p_load(tidyverse, dplyr, ggplot2, robumeta, metafor, MAc, clubSandwich, 
 
 ############## Section 2: Data Processing ############## 
 
-## Import raw data file
+## Import raw data 
 ```{r}
 raw_data <- read_csv("raw_data/pilot.csv", na = "NA")
 raw_data <- raw_data %>% mutate(id = paste0("ID",row_number())) #create ID nums
@@ -48,7 +48,7 @@ use_corr_data <- raw_data
 # Dataset 2: For correlational analysis 2 (prob use)
 
 ```{r}
-#note to self: add whatever selection/cutting code is needed here
+#note add whatever selection/cutting code is needed here
 prob_use_corr_data <- raw_data
 ```
 
