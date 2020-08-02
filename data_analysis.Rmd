@@ -1,20 +1,17 @@
 ---
 title: "Data_analysis"
 author: "Douglas A. Parry"
-date: "6/3/2020"
+date: "14/8/2020"
 output: html_document
 ---
 
 ############## Section 1: Setup ############## 
 
-## clear environment and turn scientific notation off
-```{r setup_1}
+## Load packages and clear environment and turn scientific notation off
+```{r setup, message=FALSE, warning=FALSE}
 rm(list = ls())
 options(scipen = 999)
-```
 
-## Load packages
-```{r setup_2, message=FALSE, warning=FALSE}
 if (!require("pacman")) install.packages("pacman"); 
 library(pacman)
 pacman::p_load(tidyverse, dplyr, ggplot2, robumeta, metafor, MAc, clubSandwich, multcomp)
