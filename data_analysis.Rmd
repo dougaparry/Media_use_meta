@@ -1,63 +1,1122 @@
 ---
-title: "Data_analysis"
+title: "Data_analysis for meta analysis of self-reported and logged media use"
 author: "Douglas A. Parry"
-date: "14/8/2020"
+date: "September 2020"
 output: html_document
 ---
+############## Section 0: READ ME ############## 
+
+This is the analysis code for a meta-analysis on the associations between self-reported and logged measures of digital media use.
+
+The code was written in R version 4.0.2 using RMarkdown (available at: http://rmarkdown.rstudio.com/). The particular versions used for all packages is provided below. It is recommended that this file be downloaded and viewed in RStudio to view the output of the code.
 
 ############## Section 1: Setup ############## 
 
-## Load packages, clear environment and turn scientific notation off
+# Load packages, clear environment, set seed, and turn scientific notation off
 ```{r setup, message=FALSE, warning=FALSE}
 rm(list = ls())
 options(scipen = 999)
+set.seed(42)
 
 if (!require("pacman")) install.packages("pacman"); 
 library(pacman)
-pacman::p_load(tidyverse, dplyr, ggplot2, robumeta, metafor, MAc, clubSandwich, multcomp)
+pacman::p_load(tidyverse, dplyr, metafor, MAc, clubSandwich, readxl, TOSTER, robumeta)
+```
+
+# Information on the packages used for the analysis
+```{r getSessionInfo}
+sessionInfo()
 ```
 
 ############## Section 2: Data Processing ############## 
 
-## Import raw data 
+# Import and transform raw data 
 ```{r}
-raw_data <- read_csv("raw_data/pilot.csv", na = "NA")
-raw_data <- raw_data %>% mutate(id = paste0("ID",row_number())) #create ID nums
-```
+raw_data <-read_excel("raw_data/Data_Extraction.xlsx", na="NA")
 
-## transform column datatypes
-```{r}
+raw_data <- raw_data %>% mutate(effect_ID = paste0(Study_ID, Comparison_ID))
+
 raw_data$sr_outcome_type <- factor(raw_data$sr_outcome_type)
 raw_data$medium <- factor(raw_data$medium)
-raw_data$use_form <- factor(raw_data$use_form)
-raw_data$population <- factor(raw_data$population)
-raw_data$log_source <- factor(raw_data$log_source)
-raw_data$sr_form <- factor(raw_data$sr_form)
+raw_data$use_measurement <- factor(raw_data$Use_Measurement_Produced)
+raw_data$Population <- factor(raw_data$Population)
+raw_data$Log_Source <- factor(raw_data$Log_Source)
+raw_data$SR_Form <- factor(raw_data$SR_Form)
 raw_data$Measure_Type <- factor(raw_data$Measure_Type)
+raw_data$Year <- as.numeric(raw_data$Year) #removes decimal added, introduces NAs, corrected in next line
+
+raw_data <- raw_data %>% 
+  mutate(Year = as.character(ifelse(is.na(Year), "Unpublished", raw_data$Year)))
+
+raw_data <- raw_data %>% 
+  mutate(slab=paste0(paste(paste(raw_data$Authors, raw_data$Year, sep=", "), raw_data$N,  sep=" (n = "), ")"))
+```
+
+## Calculate Pearson correlations from Spearman correlations
+```{r}
+#Spearman correlations approximated to Pearson correlations as per Gilpin 1993 (DOI: 10.1177/0013164493053001007) [rounded to 2 decimal places]
+
+raw_data <- raw_data %>%
+  mutate(Correlation_r = as.numeric(case_when(effect_ID == "P10S4C4" ~ 0.43, #r_s = 0.4        
+                                  effect_ID == "P10S6C6" ~ 0.44, #r_s = 0.42 
+                                  effect_ID == "P13S1C1" ~ 0.09, #r_s = 0.1
+                                  effect_ID == "P13S1C2" ~ 0.31, #r_s = 0.3
+                                  effect_ID == "P23S1C1" ~ 0.52, #r_s = 0.51
+                                  effect_ID == "P24S1C2" ~ 0.37, #r_s = 0.362
+                                  effect_ID == "P24S1C1" ~ 0.38, #r_s = 0.37
+                                  effect_ID == "P25S1C1" ~ 0.22, #r_s = 0.206
+                                  effect_ID == "P34S1C1" ~ 0.40, #r_s = 0.38
+                                  effect_ID == "P37S1C1" ~ 0.40, #r_s = 0.381562
+                                  effect_ID == "P37S1C2" ~ 0.29, #r_s = 0.28938
+                                  effect_ID == "P37S2C5" ~ 0.32, #r_s = 0.31196
+                                  effect_ID == "P37S2C6" ~ 0.19, #r_s = 0.1828896
+                                  effect_ID == "P37S1C3" ~ 0.19, #r_s = 0.17596
+                                  effect_ID == "P37S1C4" ~ 0.02, #r_s = 0.01238
+                                  effect_ID == "P37S2C7" ~ 0.58, #r_s = 0.55409
+                                  effect_ID == "P37S2C8" ~ 0.28, #r_s = 0.26647
+                                  effect_ID == "P39S1C1" ~ 0.294, #r_s = 0.287
+                                  effect_ID == "P44S1C1" ~ 0.52, #r_s = 0.507
+                                  TRUE ~ as.numeric(Correlation_r))))
 ```
 
 ############## Section 3: Create Datasets ############## 
 
-# Dataset 1: For correlational analysis 1 (use)
-
 ```{r}
-#note to self: add whatever selection/cutting code is needed here
-use_corr_data <- raw_data
-```
+# Dataset 1: For correlational analysis 1 (use)
+use_corr_data <- raw_data %>% filter(`use-cor-analysis` == "Y")
 
 # Dataset 2: For correlational analysis 2 (prob use)
-
-```{r}
-#note add whatever selection/cutting code is needed here
-prob_use_corr_data <- raw_data
-```
+prob_use_corr_data <- raw_data %>% filter(`prob-cor-analysis`== "Y")
 
 # Dataset 3: For analysis of measurement 'accuracy'
-```{r}
-#note to self: add whatever selection/cutting code is needed here [for now just test with ID11, ID12, ID15, ID16, and ID17]
-acc_data <- raw_data %>% 
-  filter(sr_form =="SINGLE") %>% 
-  filter(id %in% c("ID11", "ID12", "ID15", "ID16", "ID17"))
+acc_data <- raw_data %>% filter(`under-over-analysis` == "Y")
 ```
 
+# Data set descriptives
+```{r}
+# overall sample size
+raw_data %>% summarise(tot_n = sum(N)) 
+```
+
+### Use cor descriptives
+```{r}
+n_distinct(use_corr_data$Paper_ID)
+n_distinct(use_corr_data$Study_ID) 
+use_corr_data %>% summarise(tot_n = sum(N)) 
+
+use_corr_data %>% summarise(mean_n = mean(N),
+                            sd_n = sd(N),
+                            median_n = median(N),
+                            min_n = min(N),
+                            max_n = max(N))
+
+use_corr_data %>% group_by(Population) %>% tally()
+```
+### prob use cor descriptives
+```{r}
+n_distinct(prob_use_corr_data$Paper_ID)
+n_distinct(prob_use_corr_data$Study_ID) 
+prob_use_corr_data %>% summarise(tot_n = sum(N)) 
+
+prob_use_corr_data %>% summarise(mean_n = mean(N),
+                            sd_n = sd(N),
+                            median_n = median(N),
+                            min_n = min(N),
+                            max_n = max(N))
+
+prob_use_corr_data %>% group_by(Population) %>% tally()
+```
+### acc, under/over descriptives
+```{r}
+n_distinct(acc_data$Paper_ID)
+n_distinct(acc_data$Study_ID) 
+acc_data %>% summarise(tot_n = sum(N)) 
+
+acc_data %>% summarise(mean_n = mean(N),
+                            sd_n = sd(N),
+                            median_n = median(N),
+                            min_n = min(N),
+                            max_n = max(N))
+
+acc_data %>% group_by(Population) %>% tally()
+```
 ############## Section 4: Effect Size Calculations ############## 
+
+## Use correlations
+```{r}
+use_corr_data <- escalc(measure="ZCOR", 
+                    ri=Correlation_r, 
+                    ni=N, 
+                    data=use_corr_data, 
+                    slab=paste(Authors, Year, sep=", ")) 
+```
+
+## problematic use correlations
+```{r}
+prob_use_corr_data <- escalc(measure="ZCOR", 
+                    ri=Correlation_r, 
+                    ni=N, 
+                    data=prob_use_corr_data, 
+                    slab=paste(Authors, Year, sep=", "))
+```
+
+## under-over ROMC effect size
+```{r}
+acc_data <- escalc(measure = "ROMC", m1i=SR_Mean, m2i=Log_Mean, sd1i = SR_SD, sd2i = Log_SD, ni=N, ri=Correlation_r, data=acc_data)
+```
+
+# Export clean data sets
+```{r}
+#Export data to csv
+write_csv(use_corr_data, "clean_data/use_corr_data.csv")
+write_csv(prob_use_corr_data, "clean_data/prob_use_corr_data.csv")
+write_csv(acc_data, "clean_data/acc_data.csv")
+
+#Export data to RDS
+saveRDS(use_corr_data, file = "clean_data/use_corr_data.rds")
+saveRDS(prob_use_corr_data, file = "clean_data/prob_use_corr_data.rds")
+saveRDS(acc_data, file = "clean_data/acc_data.rds")
+```
+
+############## Section 5: H1 RE model: use-correlations ############## 
+
+First calculate random effects model with metafor (used for visualisation). After this, use robumeta::robu to calculate model with RVE (using correlational weighting scheme).
+
+```{r}
+h1_model <- rma.uni(yi=yi, vi = vi, data=use_corr_data, level = 95, digits = 7)
+h1_model
+```
+
+# H1 model z to r conversion (with metafor)
+```{r}
+h1_ztor_model <- predict(h1_model, digits=7, transf = transf.ztor) 
+h1_ztor_model
+```
+
+# Use robu to get RVE (using CORR for model weights)
+
+```{r}
+H1_model_robu <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data)
+
+H1_model_robu #note, these have not been transformed from z to r yet.
+```
+Convert from z to r
+```{r}
+psych::fisherz2r(0.398) 
+psych::fisherz2r(0.345) 
+psych::fisherz2r(0.449) 
+```
+
+# Equivalence test for overall analysis
+
+```{r}
+#first need to convert from r to d as TOSTmeta is only compatible with Cohen's d at present. This will result in some loss of precision but, in the context of this analysis, this is acceptable and won't impact the overall outcome.
+
+#lower confidence interval
+lower_conf <- (2*0.3319339)/(sqrt(1-0.3319339^2))
+
+#upper confidence interval
+upper_conf <- (2*0.4210767)/(sqrt(1-0.4210767^2))
+
+#effect size
+ES_r_to_d <- (2*0.3782364)/(sqrt(1-0.3782364^2)) 
+
+# lower equivalence bound
+lower_bound <- (2*-0.1)/(sqrt(1-(-0.1)^2)) #-0.2010076
+
+#upper equivalence bound
+upper_bound <- (2*0.1)/(sqrt(1-0.1^2)) # 0.2010076
+
+#Need to calculate the standard error from the CIs --> (upper CI- lower CI)/(2*1.96)
+es.se <- (upper_conf - lower_conf)/(2*1.96) 
+
+TOSTmeta(ES=ES_r_to_d, se = es.se, low_eqbound_d = lower_bound, high_eqbound_d = upper_bound, alpha = 0.05)
+```
+# Test for small study bias
+
+```{r}
+funnel(h1_model)
+```
+# Eggers regression test incorporating robust variance estimation (RVE)
+
+Code adapted from: Evaluating Meta-Analytic Methods to Detect Selective Reporting in the Presence of Dependent Effect Sizes (Rodgers and Pustejovsky). Available at: https://osf.io/preprints/metaarxiv/vqp8u/ (peer-reviewed DOI: 10.1037/met0000300). Code https://osf.io/7ak2m/?view_only=e74f9ddad3834e0e8c0bae9ef6b0441c
+
+First create function for the analysis
+```{r}
+robu_func <- function(formula, dat, fit){
+  robu_model <- robu(formula, data = dat, studynum = Study_ID, var.eff.size = vi, 
+                     modelweights = "CORR", rho = 0.8, small = TRUE)
+  robu_results <- with(robu_model, data.frame(fit = fit, 
+                                              beta = as.numeric(robu_model$reg_table$b.r[2]), 
+                                              se = as.numeric(robu_model$reg_table$SE[2]), 
+                                              p_nomissing = pt(as.numeric(robu_model$reg_table$t[2]), 
+                                                        as.numeric(robu_model$reg_table$dfs[2]), 
+                                                        lower.tail = FALSE)))
+  return(robu_results)
+  
+}
+```
+
+Run Egger Sandwich Test
+```{r}
+egg_sndwich_se <- robu_func(formula = yi ~  1 + sqrt(vi), dat = use_corr_data, fit = "RVE")
+egg_sndwich_se
+```
+
+# Contour enhanced funnel plot
+```{r}
+#export to pdf
+pdf(file='figures/use_cor_funnel.pdf', height=10, width=12)
+cefp <- funnel(h1_model, level=c(90, 95, 99), 
+               shade=c("white", "gray55", "gray75"), 
+               atransf = transf.ztor,
+               #refline=0,
+               legend=TRUE)   
+dev.off() 
+
+#export to low res png
+png('figures/use_cor_funnel_low_res.png',units="in", height=10, width=12, res=300)
+cefp <- funnel(h1_model, level=c(90, 95, 99), 
+               shade=c("white", "gray55", "gray75"), 
+               atransf = transf.ztor,
+               #refline=0,
+               legend=TRUE)   
+dev.off() 
+
+#export to high res png
+png('figures/use_cor_funnel_high_res.png',units="in", height=10, width=12, res=800)
+cefp <- funnel(h1_model, level=c(90, 95, 99), 
+               shade=c("white", "gray55", "gray75"), 
+               atransf = transf.ztor,
+               #refline=0,
+               legend=TRUE)   
+dev.off() 
+```
+
+## check for outlier with influence test
+Note: this approach does not currently work with RVE in either metafor or robumeta.
+```{r}
+inf <- influence(h1_model)
+print(inf)
+```
+
+# Leave one out sensitivity analysis 
+Note, this does not account for RVE. Therefore, the following chunk conducts the analysis without the identified outlier incorporating RVE.
+```{r}
+leave1out(h1_model, transf = transf.ztor)
+```
+
+```{r}
+use_corr_data_no_outlier <- use_corr_data %>% filter(effect_ID != "P15S1C2")
+
+use_cor_no_outlier_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_no_outlier)
+
+use_cor_no_outlier_model #note, these have not been transformed from z to r yet.
+
+rm(use_corr_data_no_outlier) #remove redundant dataframe
+```
+Convert from z to r
+```{r}
+psych::fisherz2r(0.393) 
+psych::fisherz2r(0.344) 
+psych::fisherz2r(0.443) 
+```
+
+# sensitvity analysis for publication status:
+```{r}
+use_corr_data_Pub <- use_corr_data %>%  filter(Source_Type == "Published")
+
+use_cor_published_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_Pub)
+use_cor_published_model
+
+rm(use_corr_data_Pub)
+```
+
+```{r}
+psych::fisherz2r(0.411) 
+psych::fisherz2r(0.351) 
+psych::fisherz2r(0.471) 
+```
+
+
+```{r}
+use_corr_data_UnPub <- use_corr_data %>%  filter(Source_Type == "Unpublished")
+
+use_cor_unpub_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_UnPub)
+use_cor_unpub_model
+
+rm(use_corr_data_UnPub)
+```
+
+```{r}
+psych::fisherz2r(0.318) 
+psych::fisherz2r(0.209) 
+psych::fisherz2r(0.428) 
+```
+
+# moderator analysis for publication status
+```{r}
+use_cor_pub_status_model <- robu(formula = yi ~ Source_Type, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data)
+use_cor_pub_status_model
+```
+
+```{r}
+psych::fisherz2r(-0.0832) 
+psych::fisherz2r(-0.210) 
+psych::fisherz2r(0.0432) 
+```
+
+## Sensitivity analysis excluding digitised study
+```{r}
+use_corr_data_non_digitised <- use_corr_data %>%  filter(effect_ID != "P17S1C1")
+
+use_cor_non_digitised_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_non_digitised)
+use_cor_non_digitised_model
+
+rm(use_corr_data_non_digitised)
+```
+
+```{r}
+psych::fisherz2r(0.405) 
+psych::fisherz2r(0.354) 
+psych::fisherz2r(0.455) 
+```
+
+# Produce forest plot for H1
+The forest plot is produced and exported in 3 formats: pdf, low-res png and high-res png.
+
+## function to produce the forest plot
+```{r}
+produce_use_cor_forest <- function(){
+
+forest(h1_model, 
+       atransf=transf.ztor,
+       xlim=c(-3.9,3), alim=c(-0.5, 2),
+       header="Author(s) and Year",
+       slab=use_corr_data$slab, 
+       at=transf.rtoz(c(-0.4, 0, .5, .9)),
+       order=order(transf.ztor(use_corr_data$yi)), #order by effect size
+       xlab="Correlation Coefficient",
+       mlab = "",
+       addfit = FALSE,
+       ilab=as.character(use_corr_data$medium), ilab.xpos = -0.9)
+
+addpoly(x = 0.398, ci.lb = 0.345, ci.ub = 0.449, atransf=transf.ztor, row=-1, mlab="", cex=1)
+#psych::fisherz2r(0.398) 
+#psych::fisherz2r(0.345) 
+#psych::fisherz2r(0.449) 
+
+abline(h = 0.45)
+
+text(-0.9, 66, "Medium", font=2)
+#text(-3.9, -1, pos=4, "RE Model", font=2)
+text(-3.9, -1, pos=4, "RE Model with RVE (using correlational weighting scheme)", font=2)
+
+segments(transf.rtoz(0.5), -5, transf.rtoz(0.5), 68, lty="dotted") #extra line at r=0.5
+}
+```
+
+### Export as pdf
+```{r}
+pdf(file='figures/use_cor_forest.pdf', height=13.5, width=10)
+par(mar=c(3.5,3.5,0.2,1.5))
+
+produce_use_cor_forest()
+
+par(font=2)
+dev.off
+```
+
+### Export as png (low res)
+```{r}
+png(file='figures/use_cor_forest_low_res.png', units = "in", height=13.5, width=10, res=300)
+par(mar=c(3.5,3.5,0.2,1.5))
+
+produce_use_cor_forest()
+
+par(font=2)
+dev.off
+```
+
+### Export as png (high res)
+```{r}
+png(file='figures/use_cor_forest_high_res.png', units = "in", height=13.5, width=10, res=800)
+par(mar=c(3.5,3.5,0.2,1.5))
+
+produce_use_cor_forest()
+
+par(font=2)
+dev.off
+```
+
+############## Section 6: RQ1: Moderators of H1 ############## 
+
+For all moderators, first check if there are 4 observations at each moderator level
+
+#RQ1a: medium as moderator (Computer, Phone, Social media, Internet, Games):
+```{r}
+use_corr_data %>% dplyr::select(medium) %>% group_by(medium) %>% tally()
+```
+
+Only select the moderator levels for which there are 4 or more observations
+```{r}
+medium_data <- use_corr_data %>% 
+  filter(medium == "Phone" | medium == "Social Media")
+
+macat(es=yi, var=vi, mod=medium, data=medium_data, method="random", ztor=TRUE)
+```
+Because there are only 2 levels, not conducting pairwise comparison (in the protocol this is specified for all moderators with more than two levels)
+
+```{r}
+use_corr_data_Phone <- use_corr_data %>%  filter(medium == "Phone")
+
+use_cor_phone_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_Phone)
+use_cor_phone_model
+
+rm(use_corr_data_Phone)
+```
+
+```{r}
+psych::fisherz2r(0.409) 
+psych::fisherz2r(0.327) 
+psych::fisherz2r(0.491) 
+```
+
+```{r}
+use_corr_data_Social_Media <- use_corr_data %>%  filter(medium == "Social Media")
+
+use_cor_social_media_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_Social_Media)
+use_cor_social_media_model
+
+rm(use_corr_data_Social_Media)
+```
+
+```{r}
+psych::fisherz2r(0.372) 
+psych::fisherz2r(0.276) 
+psych::fisherz2r(0.469) 
+```
+
+### Model excluding gaming, computers, and internet
+```{r}
+use_cor_medium_excluding_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = medium_data)
+use_cor_medium_excluding_model
+```
+
+```{r}
+psych::fisherz2r(0.395) 
+psych::fisherz2r(0.336) 
+psych::fisherz2r(0.454) 
+```
+
+```{r}
+use_cor_medium_excluding_moderator_model <- robu(formula = yi ~ medium, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = medium_data)
+use_cor_medium_excluding_moderator_model
+
+rm(medium_data)
+```
+
+```{r}
+psych::fisherz2r(-0.0295) 
+```
+
+# RQ1b: Self-report form as moderator (single estimate vs. scale):
+```{r}
+use_corr_data %>% dplyr::select(SR_Form) %>% group_by(SR_Form) %>% tally()
+```
+```{r}
+macat(es=yi, var=vi, mod=SR_Form, data=use_corr_data, method="random", ztor=TRUE)
+```
+
+#Individual levels with RVE
+```{r}
+use_corr_data_Single <- use_corr_data %>% filter(SR_Form == "SINGLE")
+
+use_cor_single_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_Single)
+use_cor_single_model
+rm(use_corr_data_Single)
+```
+
+```{r}
+psych::fisherz2r(0.41) 
+psych::fisherz2r(0.357) 
+psych::fisherz2r(0.464) 
+```
+
+```{r}
+use_corr_data_Scale <- use_corr_data %>% filter(SR_Form == "SCALE")
+
+use_cor_scale_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_Scale)
+use_cor_scale_model
+rm(use_corr_data_Scale)
+```
+
+```{r}
+psych::fisherz2r(0.25) 
+psych::fisherz2r(-0.0036) 
+psych::fisherz2r(0.504) 
+```
+
+Run moderator model
+```{r}
+use_cor_self_report_form_model <- robu(formula = yi ~ SR_Form, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data)
+use_cor_self_report_form_model
+```
+
+```{r}
+psych::fisherz2r(0.135) 
+```
+
+#RQ1c: Category of media use as moderator (volume or duration of usage):
+```{r}
+use_corr_data %>% dplyr::select(Measure_Type) %>% group_by(Measure_Type) %>% tally()
+```
+```{r}
+macat(es=yi, var=vi, mod=Measure_Type, data=use_corr_data, method="random", ztor=TRUE) 
+```
+
+```{r}
+use_corr_data_Duration <- use_corr_data %>% filter(Measure_Type == "Duration")
+
+use_cor_duration_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_Duration)
+use_cor_duration_model
+rm(use_corr_data_Duration)
+```
+
+```{r}
+psych::fisherz2r(0.403) 
+psych::fisherz2r(0.346) 
+psych::fisherz2r(0.459) 
+```
+
+```{r}
+use_corr_data_Volume <- use_corr_data %>% filter(Measure_Type == "Volume")
+
+use_cor_volume_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_Volume)
+use_cor_volume_model
+rm(use_corr_data_Volume)
+```
+
+```{r}
+psych::fisherz2r(0.36) 
+psych::fisherz2r(0.243) 
+psych::fisherz2r(0.468) 
+```
+
+```{r}
+use_cor_self_report_category_model <- robu(formula = yi ~ Measure_Type, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data)
+use_cor_self_report_category_model
+```
+
+```{r}
+psych::fisherz2r(-0.00318) 
+```
+
+############## Section 7: RQ2: under- or over-reporting ############## 
+
+## proportion under/accurate/over
+
+We used a margin of error of 5% or more above the tracked measure to indicate over-reporting, 5% or more below to indicate under-reporting, and mean estimates within 5% of the log-based measure to be accurate. 
+
+```{r}
+acc_data <- acc_data %>% 
+  mutate(acc = case_when(SR_Mean > (Log_Mean + 0.05*Log_Mean) ~ "over",
+                                    SR_Mean < (Log_Mean - 0.05*Log_Mean) ~ "under",
+                                    TRUE ~ "accurate"))
+```
+
+```{r}
+acc_data %>% 
+  group_by(acc) %>% 
+  summarise(n = n()) %>%
+  mutate((freq = n / sum(n))*100)
+```
+## RE model
+First calculate random effects model with metafor (used for visualisation). After this, use robumeta::robu to calculate model with RVE (using correlational weighting scheme).
+```{r}
+rq2_model <- rma.uni(yi=yi, vi = vi, data=acc_data, level = 95, digits = 7)
+rq2_model
+```
+
+# Transform from log
+```{r}
+log_transform_mod <- predict(rq2_model, digits=7, transf = exp) 
+log_transform_mod
+```
+
+# Use robu to calculate RVE
+```{r}
+res <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data)
+
+res #note, these have not been transformed from log to exp
+```
+
+```{r}
+exp(0.178)
+exp(-0.066)
+exp(0.423)
+```
+
+# Test for small study bias
+```{r}
+funnel(rq2_model)
+```
+# Eggers regression test incorporating robust variance estimation (RVE)
+
+```{r}
+egg_sndwich_se <- robu_func(formula = yi ~  1 + sqrt(vi), dat = acc_data, fit = "RVE")
+egg_sndwich_se
+```
+
+# Contour enhanced funnel plot:
+```{r}
+#export to pdf
+pdf(file='figures/acc_funnel.pdf', height=10, width=12)
+cefp <- funnel(rq2_model, level=c(90, 95, 99), 
+               shade=c("white", "gray55", "gray75"), 
+               atransf = exp,
+               #refline=0,
+               legend=TRUE)   
+dev.off() 
+
+#export to low res png
+png('figures/acc_funnel_low_res.png',units="in", height=10, width=12, res=300)
+cefp <- funnel(rq2_model, level=c(90, 95, 99), 
+               shade=c("white", "gray55", "gray75"), 
+               atransf = exp,
+               #refline=0,
+               legend=TRUE)   
+dev.off() 
+
+#export to high res png
+png('figures/acc_funnel_high_res.png',units="in", height=10, width=12, res=800)
+cefp <- funnel(rq2_model, level=c(90, 95, 99), 
+               shade=c("white", "gray55", "gray75"), 
+               atransf = exp,
+               #refline=0,
+               legend=TRUE)   
+dev.off() 
+```
+
+# check for outlier with influence test
+Note: this approach does not currently work with RVE in either metafor or robumeta.
+```{r}
+inf <- influence(rq2_model)
+print(inf)
+```
+
+# Leave one out sensitivity analysis 
+Note, this does not account for RVE. Therefore, the following chunk conducts the analysis without the identified outlier incorporating RVE.
+```{r}
+leave1out(rq2_model, transf = exp)
+```
+
+# excluding outlier and account for RVE
+```{r}
+acc_data_no_outlier <- acc_data %>% filter(effect_ID != "P15S1C2")
+
+acc_no_outlier_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data_no_outlier)
+acc_no_outlier_model #note, these have not been transformed from log to exp yet
+
+rm(acc_data_no_outlier)
+```
+
+```{r}
+exp(0.158)
+exp(-0.064)
+exp(0.381)
+```
+
+# sensitvity analysis for publication status:
+```{r}
+acc_data_Pub <- acc_data %>%  filter(Source_Type == "Published")
+
+acc_published_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data_Pub)
+acc_published_model
+
+rm(acc_data_Pub)
+```
+
+```{r}
+exp(0.252) 
+exp(-0.04) 
+exp(0.544) 
+```
+
+
+```{r}
+acc_data_UnPub <- acc_data %>%  filter(Source_Type == "Unpublished")
+
+acc_unpublished_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data_UnPub)
+acc_unpublished_model
+
+rm(acc_data_UnPub)
+```
+
+```{r}
+exp(-0.113) 
+exp(-0.559) 
+exp(0.333) 
+```
+
+#moderator analysis for publication status
+```{r}
+acc_publication_status_moderator_model <- robu(formula = yi ~ Source_Type, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data)
+acc_publication_status_moderator_model
+```
+
+## Sensitivity analysis excluding effect of two digitised studies
+
+```{r}
+acc_data_non_digitised <- acc_data %>% 
+  filter(plot_digitised == "N")
+
+acc_non_digitised_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data_non_digitised)
+acc_non_digitised_model
+
+rm(acc_data_non_digitised)
+```
+
+```{r}
+exp(0.179)
+exp(-0.0755)
+exp(0.434)
+```
+
+# Forest plot
+Forest plot function
+```{r}
+produce_acc_forest_plot <- function(){
+
+forest(rq2_model, 
+       transf=exp, 
+       alim=c(0, 20), xlim=c(-35,35),
+       refline=1,
+       slab=acc_data$slab,
+       mlab = "",
+       header="Author(s) and Year",
+       addfit = FALSE,
+       ilab=as.character(acc_data$Measure_Type), ilab.xpos = -5,
+       order="obs",
+       efac=c(0,1,1.5)) 
+
+addpoly(x = 0.183, ci.lb = -0.0625, ci.ub = 0.428, transf = exp, row=-0.8, mlab="", cex=1)
+abline(h=0.45)
+  
+text(-5, 51, "Use Category", font=2)
+
+text(-35, -0.8, pos=4, "RE Model with RVE (using correlational weighting scheme)", font=2)
+
+}
+```
+
+Export PDF
+```{r}
+pdf(file='figures/acc_forest.pdf', height=12, width=10)
+par(mar=c(4,3.6,0.2,1.5))
+
+produce_acc_forest_plot()
+
+par(font=2)
+dev.off
+```
+
+Export as png (low res)
+```{r}
+png(file='figures/acc_forest_low_res.png', units = "in", height=13.5, width=10, res=300)
+par(mar=c(3.5,3.5,0.2,1.5))
+
+produce_acc_forest_plot()
+
+par(font=2)
+dev.off
+```
+
+Export as png (high res)
+```{r}
+png(file='figures/acc_forest_high_res.png', units = "in", height=13.5, width=10, res=800)
+par(mar=c(3.5,3.5,0.2,1.5))
+
+produce_acc_forest_plot()
+
+par(font=2)
+dev.off
+```
+
+############## Section 8: RQ3: moderators of RQ2 ############## 
+
+#RQ3a medium as moderator
+```{r}
+acc_data %>% dplyr::select(medium) %>% group_by(medium) %>% tally()
+```
+
+Because only sufficient data for a single moderator level, will not perform moderator analysis, but will perform a subgroup analysis
+```{r}
+acc_data_phone <- acc_data %>% filter(medium == "Phone")
+
+acc_phone_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data_phone)
+acc_phone_model
+
+rm(acc_data_phone)
+```
+
+```{r}
+exp(0.0555)
+exp(-0.165)
+exp(0.276)
+```
+
+#RQ3b category of media use (duration or volume) as moderator
+```{r}
+acc_data %>% dplyr::select(Measure_Type) %>% group_by(Measure_Type) %>% tally()
+```
+
+```{r}
+acc_data_duration <- acc_data %>% filter(Measure_Type == "Duration")
+
+acc_duration_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data_duration)
+acc_duration_model
+
+rm(acc_data_duration)
+```
+
+```{r}
+exp(0.248)
+exp(-0.00193)
+exp(0.498)
+```
+
+```{r}
+acc_data_volume <- acc_data %>% 
+  filter(Measure_Type == "Volume")
+
+acc_volume_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data_volume)
+acc_volume_model
+
+rm(acc_data_volume)
+```
+
+```{r}
+exp(-0.228)
+exp(-0.563)
+exp(0.107)
+```
+
+```{r}
+acc_self_report_category_moderator_model <- robu(formula = yi ~ Measure_Type, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data)
+acc_self_report_category_moderator_model
+```
+
+############## Section 9: H1 RE model: prob-use-correlations ############## 
+First calculate random effects model with metafor (used for visualisation). After this, use robumeta::robu to calculate model with RVE (using correlational weighting scheme).
+```{r}
+h2_model <- rma.uni(yi=yi, vi = vi, data=prob_use_corr_data, level = 95, digits = 7)
+h2_model
+```
+
+# Perform Fisher's z-to-r for reporting
+```{r}
+h2_ztor_model <- predict(h2_model, digits=7, transf = transf.ztor) 
+h2_ztor_model
+```
+
+# Use robu to get RVE (using CORR for model weights)
+```{r}
+h2_model_robu <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = prob_use_corr_data)
+
+h2_model_robu #note, these have not been transformed from z to r yet.
+```
+
+```{r}
+psych::fisherz2r(0.251)
+psych::fisherz2r(0.199)
+psych::fisherz2r(0.302)
+```
+
+# Equivalence test for overall analysis
+
+```{r}
+#first need to convert from r to d as TOSTmeta is only compatible with Cohen's d at present. This will result in some loss of precision but, in the context of this analysis, this is acceptable and won't impact the overall outcome.
+
+#lower confidence interval
+lower_conf <- (2*0.1964141)/(sqrt(1-0.1964141^2))
+
+#upper confidence interval
+upper_conf <- (2*0.2931418)/(sqrt(1-0.2931418^2))
+
+#effect size
+ES_r_to_d <- (2*0.2458584)/(sqrt(1-0.2458584^2)) 
+
+# lower equivalence bound
+lower_bound <- (2*-0.1)/(sqrt(1-(-0.1)^2)) #-0.2010076
+
+#upper equivalence bound
+upper_bound <- (2*0.1)/(sqrt(1-0.1^2)) # 0.2010076
+
+#Need to calculate the standard error from the CIs --> (upper CI- lower CI)/(2*1.96)
+es.se <- (upper_conf - lower_conf)/(2*1.96) 
+
+TOSTmeta(ES=ES_r_to_d, se = es.se, low_eqbound_d = lower_bound, high_eqbound_d = upper_bound, alpha = 0.05)
+```
+
+# Egger's regression test
+```{r}
+funnel(h2_model)
+```
+# Eggers regression test incorporating robust variance estimation (RVE)
+```{r}
+egg_sndwich_se <- robu_func(formula = yi ~  1 + sqrt(vi), dat = prob_use_corr_data, fit = "RVE")
+egg_sndwich_se
+```
+
+# Contour enhanced funnel plot:
+```{r}
+#export to pdf
+pdf(file='figures/prob_use_cor_funnel.pdf', height=10, width=12)
+cefp <- funnel(h2_model, level=c(90, 95, 99), 
+               shade=c("white", "gray55", "gray75"), 
+               atransf = transf.ztor,
+               #refline=0,
+               legend=TRUE)   
+dev.off() 
+
+#export to low res png
+png('figures/prob_use_cor_funnel_low_res.png',units="in", height=10, width=12, res=300)
+cefp <- funnel(h2_model, level=c(90, 95, 99), 
+               shade=c("white", "gray55", "gray75"), 
+               atransf = transf.ztor,
+               #refline=0,
+               legend=TRUE)   
+dev.off() 
+
+#export to high res png
+png('figures/prob_use_cor_funnel_high_res.png',units="in", height=10, width=12, res=800)
+cefp <- funnel(h2_model, level=c(90, 95, 99), 
+               shade=c("white", "gray55", "gray75"), 
+               atransf = transf.ztor,
+               #refline=0,
+               legend=TRUE)   
+dev.off() 
+```
+
+## check for outlier with influence test
+Note, this does not account for RVE.
+```{r}
+inf <- influence(h2_model)
+print(inf)
+```
+
+## sensitvity analysis for publication status:
+```{r}
+prob_use_corr_Pub <- prob_use_corr_data %>%  filter(Source_Type == "Published")
+
+prob_use_corr_Pub_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = prob_use_corr_Pub)
+prob_use_corr_Pub_model
+
+rm(prob_use_corr_Pub)
+```
+
+```{r}
+psych::fisherz2r(0.256) 
+psych::fisherz2r(0.196) 
+psych::fisherz2r(0.316) 
+```
+
+Note, for the below there is an insufficent number of unpublished studies to conduct the analysis with robu. Therefore, will use rma.uni.
+```{r}
+prob_use_corr_UnPub <- prob_use_corr_data %>%  filter(Source_Type == "Unpublished")
+
+prob_use_corr_UnPub_model <- rma.uni(yi=yi, vi = vi,data=prob_use_corr_UnPub,level = 95,digits = 7)
+prob_use_corr_UnPub_model
+
+prob_use_corr_UnPub_model_ztor <- predict(prob_use_corr_UnPub_model, digits=7, transf = transf.ztor) 
+prob_use_corr_UnPub_model_ztor
+
+rm(prob_use_corr_UnPub)
+```
+
+#moderator analysis for publication status
+```{r}
+prob_use_cor_pub_status_moderator_model <- robu(formula = yi ~ Source_Type, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = prob_use_corr_data)
+prob_use_cor_pub_status_moderator_model
+```
+
+```{r}
+macat(es=yi, var=vi, mod=Source_Type, data=prob_use_corr_data, method="random", ztor=TRUE)
+```
+
+# Produce Overall Forest plot 
+```{r}
+produce_prob_use_corr_forest_plot <- function(){
+  
+  forest(h2_model, 
+       atransf=transf.ztor,
+       xlim=c(-3.5,3), alim=c(-0.6, 2),
+       header="Author(s) and Year",
+       slab=prob_use_corr_data$slab, 
+       at=transf.rtoz(c(-0.5, 0, .5, .9)),
+       order=order(transf.ztor(prob_use_corr_data$yi)), #order by effect size
+       xlab="Correlation Coefficient",
+       mlab = "",
+       addfit = FALSE,
+       ilab=as.character(prob_use_corr_data$SR_PROB_Label), ilab.xpos = -1.2,
+       efac=c(0,1,1.5)) 
+
+addpoly(x = 0.253, ci.lb = 0.202, ci.ub = 0.305, atransf=transf.ztor, row=-0.6, mlab="", cex=1)
+abline(h = 0.45)
+
+text(-1.2, 44, "Measure", font=2)
+#text(-3.5, -1, pos=4, "RE Model", font=2)
+text(-3.5, -0.6, pos=4, "RE Model with RVE (using correlational weighting scheme)", font=2)
+
+segments(transf.rtoz(0.5), -5, transf.rtoz(0.5), 41, lty="dotted") #extra line at r=0.5
+  
+}
+```
+
+Export PDF
+```{r}
+pdf(file='figures/prob_use_forest.pdf', height=12, width=10)
+par(mar=c(4,3.6,0.2,1.5))
+
+produce_prob_use_corr_forest_plot()
+
+par(font=2)
+dev.off
+```
+
+Export as png (low res)
+
+```{r}
+png(file='figures/prob_use_forest_low_res.png', units = "in", height=13.5, width=10, res=300)
+par(mar=c(3.5,3.5,0.2,1.5))
+
+produce_prob_use_corr_forest_plot()
+
+par(font=2)
+dev.off
+```
+
+Export as png (high res)
+
+```{r}
+png(file='figures/prob_use_forest_high_res.png', units = "in", height=13.5, width=10, res=800)
+par(mar=c(3.5,3.5,0.2,1.5))
+
+produce_prob_use_corr_forest_plot()
+
+par(font=2)
+dev.off
+```
+
+# Clean up environment
+```{r}
+rm(list = ls())
+```
+
+
+
+
+
+
+
