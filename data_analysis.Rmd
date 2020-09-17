@@ -144,20 +144,12 @@ acc_data %>% group_by(Population) %>% tally()
 
 ## Use correlations
 ```{r}
-use_corr_data <- escalc(measure="ZCOR", 
-                    ri=Correlation_r, 
-                    ni=N, 
-                    data=use_corr_data, 
-                    slab=paste(Authors, Year, sep=", ")) 
+use_corr_data <- escalc(measure="ZCOR", ri=Correlation_r, ni=N,data=use_corr_data, slab=paste(Authors, Year, sep=", ")) 
 ```
 
 ## problematic use correlations
 ```{r}
-prob_use_corr_data <- escalc(measure="ZCOR", 
-                    ri=Correlation_r, 
-                    ni=N, 
-                    data=prob_use_corr_data, 
-                    slab=paste(Authors, Year, sep=", "))
+prob_use_corr_data <- escalc(measure="ZCOR", ri=Correlation_r, ni=N, data=prob_use_corr_data, slab=paste(Authors, Year, sep=", "))
 ```
 
 ## under-over ROMC effect size
@@ -199,27 +191,27 @@ h1_ztor_model
 H1_model_robu <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data)
 
 H1_model_robu #note, these have not been transformed from z to r yet.
-```
-Convert from z to r
-```{r}
-psych::fisherz2r(0.398) 
-psych::fisherz2r(0.345) 
-psych::fisherz2r(0.449) 
-```
 
+#transform
+H1_model_robu_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(H1_model_robu$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(H1_model_robu$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(H1_model_robu$reg_table$CI.U)),
+                                p.val = as.numeric(H1_model_robu$reg_table$prob)))
+H1_model_robu_results
+```
 # Equivalence test for overall analysis
 
 ```{r}
 #first need to convert from r to d as TOSTmeta is only compatible with Cohen's d at present. This will result in some loss of precision but, in the context of this analysis, this is acceptable and won't impact the overall outcome.
 
 #lower confidence interval
-lower_conf <- (2*0.3319339)/(sqrt(1-0.3319339^2))
+lower_conf <- (2*H1_model_robu_results$CI.L)/(sqrt(1-H1_model_robu_results$CI.L^2))
 
 #upper confidence interval
-upper_conf <- (2*0.4210767)/(sqrt(1-0.4210767^2))
+upper_conf <- (2*H1_model_robu_results$CI.U)/(sqrt(1-H1_model_robu_results$CI.U^2))
 
 #effect size
-ES_r_to_d <- (2*0.3782364)/(sqrt(1-0.3782364^2)) 
+ES_r_to_d <- (2*H1_model_robu_results$r)/(sqrt(1-H1_model_robu_results$r^2)) 
 
 # lower equivalence bound
 lower_bound <- (2*-0.1)/(sqrt(1-(-0.1)^2)) #-0.2010076
@@ -268,27 +260,24 @@ egg_sndwich_se
 #export to pdf
 pdf(file='figures/use_cor_funnel.pdf', height=10, width=12)
 cefp <- funnel(h1_model, level=c(90, 95, 99), 
-               shade=c("white", "gray55", "gray75"), 
+               shade=c("white", "#5C6BC0", "#9FA8DA"), 
                atransf = transf.ztor,
-               #refline=0,
                legend=TRUE)   
 dev.off() 
 
 #export to low res png
 png('figures/use_cor_funnel_low_res.png',units="in", height=10, width=12, res=300)
 cefp <- funnel(h1_model, level=c(90, 95, 99), 
-               shade=c("white", "gray55", "gray75"), 
+               shade=c("white", "#5C6BC0", "#9FA8DA"), 
                atransf = transf.ztor,
-               #refline=0,
                legend=TRUE)   
 dev.off() 
 
 #export to high res png
 png('figures/use_cor_funnel_high_res.png',units="in", height=10, width=12, res=800)
 cefp <- funnel(h1_model, level=c(90, 95, 99), 
-               shade=c("white", "gray55", "gray75"), 
+               shade=c("white", "#5C6BC0", "#9FA8DA"), 
                atransf = transf.ztor,
-               #refline=0,
                legend=TRUE)   
 dev.off() 
 ```
@@ -313,13 +302,14 @@ use_cor_no_outlier_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum =
 
 use_cor_no_outlier_model #note, these have not been transformed from z to r yet.
 
-rm(use_corr_data_no_outlier) #remove redundant dataframe
-```
-Convert from z to r
-```{r}
-psych::fisherz2r(0.393) 
-psych::fisherz2r(0.344) 
-psych::fisherz2r(0.443) 
+#transform
+use_cor_no_outlier_model_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(use_cor_no_outlier_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(use_cor_no_outlier_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(use_cor_no_outlier_model$reg_table$CI.U)),
+                                p.val = as.numeric(use_cor_no_outlier_model$reg_table$prob)))
+use_cor_no_outlier_model_results
+
+rm(use_corr_data_no_outlier, use_cor_no_outlier_model_results) #remove redundant dataframe
 ```
 
 # sensitvity analysis for publication status:
@@ -329,15 +319,15 @@ use_corr_data_Pub <- use_corr_data %>%  filter(Source_Type == "Published")
 use_cor_published_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_Pub)
 use_cor_published_model
 
-rm(use_corr_data_Pub)
-```
+#transform
+use_cor_published_model_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(use_cor_published_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(use_cor_published_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(use_cor_published_model$reg_table$CI.U)),
+                                p.val = as.numeric(use_cor_published_model$reg_table$prob)))
+use_cor_published_model_results
 
-```{r}
-psych::fisherz2r(0.411) 
-psych::fisherz2r(0.351) 
-psych::fisherz2r(0.471) 
+rm(use_corr_data_Pub, use_cor_published_model_results)
 ```
-
 
 ```{r}
 use_corr_data_UnPub <- use_corr_data %>%  filter(Source_Type == "Unpublished")
@@ -345,25 +335,29 @@ use_corr_data_UnPub <- use_corr_data %>%  filter(Source_Type == "Unpublished")
 use_cor_unpub_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_UnPub)
 use_cor_unpub_model
 
-rm(use_corr_data_UnPub)
-```
+#transform
+use_cor_unpub_model_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(use_cor_unpub_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(use_cor_unpub_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(use_cor_unpub_model$reg_table$CI.U)),
+                                p.val = as.numeric(use_cor_unpub_model$reg_table$prob)))
+use_cor_unpub_model_results
 
-```{r}
-psych::fisherz2r(0.318) 
-psych::fisherz2r(0.209) 
-psych::fisherz2r(0.428) 
+rm(use_corr_data_UnPub, use_cor_unpub_model_results)
 ```
 
 # moderator analysis for publication status
 ```{r}
 use_cor_pub_status_model <- robu(formula = yi ~ Source_Type, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data)
 use_cor_pub_status_model
-```
 
-```{r}
-psych::fisherz2r(-0.0832) 
-psych::fisherz2r(-0.210) 
-psych::fisherz2r(0.0432) 
+#transform
+use_cor_pub_status_model_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(use_cor_pub_status_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(use_cor_pub_status_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(use_cor_pub_status_model$reg_table$CI.U)),
+                                p.val = as.numeric(use_cor_pub_status_model$reg_table$prob)))
+use_cor_pub_status_model_results
+
+rm(use_cor_pub_status_model_results)
 ```
 
 ## Sensitivity analysis excluding digitised study
@@ -373,13 +367,14 @@ use_corr_data_non_digitised <- use_corr_data %>%  filter(effect_ID != "P17S1C1")
 use_cor_non_digitised_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_non_digitised)
 use_cor_non_digitised_model
 
-rm(use_corr_data_non_digitised)
-```
+#transform
+use_cor_non_digitised_model_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(use_cor_non_digitised_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(use_cor_non_digitised_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(use_cor_non_digitised_model$reg_table$CI.U)),
+                                p.val = as.numeric(use_cor_non_digitised_model$reg_table$prob)))
+use_cor_non_digitised_model_results
 
-```{r}
-psych::fisherz2r(0.405) 
-psych::fisherz2r(0.354) 
-psych::fisherz2r(0.455) 
+rm(use_corr_data_non_digitised, use_cor_non_digitised_model_results)
 ```
 
 # Produce forest plot for H1
@@ -402,9 +397,6 @@ forest(h1_model,
        ilab=as.character(use_corr_data$medium), ilab.xpos = -0.9)
 
 addpoly(x = 0.398, ci.lb = 0.345, ci.ub = 0.449, atransf=transf.ztor, row=-1, mlab="", cex=1)
-#psych::fisherz2r(0.398) 
-#psych::fisherz2r(0.345) 
-#psych::fisherz2r(0.449) 
 
 abline(h = 0.45)
 
@@ -412,7 +404,7 @@ text(-0.9, 66, "Medium", font=2)
 #text(-3.9, -1, pos=4, "RE Model", font=2)
 text(-3.9, -1, pos=4, "RE Model with RVE (using correlational weighting scheme)", font=2)
 
-segments(transf.rtoz(0.5), -5, transf.rtoz(0.5), 68, lty="dotted") #extra line at r=0.5
+segments(transf.rtoz(0.5), -5, transf.rtoz(0.5), 65, lty="dotted") #extra line at r=0.5
 }
 ```
 
@@ -473,13 +465,14 @@ use_corr_data_Phone <- use_corr_data %>%  filter(medium == "Phone")
 use_cor_phone_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_Phone)
 use_cor_phone_model
 
-rm(use_corr_data_Phone)
-```
+#transform
+use_cor_phone_model_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(use_cor_phone_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(use_cor_phone_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(use_cor_phone_model$reg_table$CI.U)),
+                                p.val = as.numeric(use_cor_phone_model$reg_table$prob)))
+use_cor_phone_model_results
 
-```{r}
-psych::fisherz2r(0.409) 
-psych::fisherz2r(0.327) 
-psych::fisherz2r(0.491) 
+rm(use_corr_data_Phone, use_cor_phone_model_results)
 ```
 
 ```{r}
@@ -488,36 +481,42 @@ use_corr_data_Social_Media <- use_corr_data %>%  filter(medium == "Social Media"
 use_cor_social_media_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_Social_Media)
 use_cor_social_media_model
 
-rm(use_corr_data_Social_Media)
-```
+#transform
+use_cor_social_media_model_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(use_cor_social_media_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(use_cor_social_media_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(use_cor_social_media_model$reg_table$CI.U)),
+                                p.val = as.numeric(use_cor_social_media_model$reg_table$prob)))
+use_cor_social_media_model_results
 
-```{r}
-psych::fisherz2r(0.372) 
-psych::fisherz2r(0.276) 
-psych::fisherz2r(0.469) 
+rm(use_corr_data_Social_Media, use_cor_social_media_model_results)
 ```
 
 ### Model excluding gaming, computers, and internet
 ```{r}
 use_cor_medium_excluding_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = medium_data)
 use_cor_medium_excluding_model
+
+#transform
+use_cor_medium_excluding_model_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(use_cor_medium_excluding_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(use_cor_medium_excluding_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(use_cor_medium_excluding_model$reg_table$CI.U)),
+                                p.val = as.numeric(use_cor_medium_excluding_model$reg_table$prob)))
+use_cor_medium_excluding_model_results
 ```
 
-```{r}
-psych::fisherz2r(0.395) 
-psych::fisherz2r(0.336) 
-psych::fisherz2r(0.454) 
-```
-
+Moderator model
 ```{r}
 use_cor_medium_excluding_moderator_model <- robu(formula = yi ~ medium, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = medium_data)
 use_cor_medium_excluding_moderator_model
 
-rm(medium_data)
-```
+#transform
+use_cor_medium_excluding_moderator_model_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(use_cor_medium_excluding_moderator_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(use_cor_medium_excluding_moderator_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(use_cor_medium_excluding_moderator_model$reg_table$CI.U)),
+                                p.val = as.numeric(use_cor_medium_excluding_moderator_model$reg_table$prob)))
+use_cor_medium_excluding_moderator_model_results
 
-```{r}
-psych::fisherz2r(-0.0295) 
+rm(medium_data, use_cor_medium_excluding_moderator_model_results)
 ```
 
 # RQ1b: Self-report form as moderator (single estimate vs. scale):
@@ -534,13 +533,15 @@ use_corr_data_Single <- use_corr_data %>% filter(SR_Form == "SINGLE")
 
 use_cor_single_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_Single)
 use_cor_single_model
-rm(use_corr_data_Single)
-```
 
-```{r}
-psych::fisherz2r(0.41) 
-psych::fisherz2r(0.357) 
-psych::fisherz2r(0.464) 
+#transform
+use_cor_single_model_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(use_cor_single_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(use_cor_single_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(use_cor_single_model$reg_table$CI.U)),
+                                p.val = as.numeric(use_cor_single_model$reg_table$prob)))
+use_cor_single_model_results
+
+rm(use_corr_data_Single, use_cor_single_model_results)
 ```
 
 ```{r}
@@ -548,23 +549,28 @@ use_corr_data_Scale <- use_corr_data %>% filter(SR_Form == "SCALE")
 
 use_cor_scale_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_Scale)
 use_cor_scale_model
-rm(use_corr_data_Scale)
-```
 
-```{r}
-psych::fisherz2r(0.25) 
-psych::fisherz2r(-0.0036) 
-psych::fisherz2r(0.504) 
+#transform
+use_cor_scale_model_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(use_cor_scale_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(use_cor_scale_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(use_cor_scale_model$reg_table$CI.U)),
+                                p.val = as.numeric(use_cor_scale_model$reg_table$prob)))
+use_cor_scale_model_results
+
+rm(use_corr_data_Scale, use_cor_scale_model_results)
 ```
 
 Run moderator model
 ```{r}
 use_cor_self_report_form_model <- robu(formula = yi ~ SR_Form, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data)
 use_cor_self_report_form_model
-```
 
-```{r}
-psych::fisherz2r(0.135) 
+#transform
+use_cor_self_report_form_model_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(use_cor_self_report_form_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(use_cor_self_report_form_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(use_cor_self_report_form_model$reg_table$CI.U)),
+                                p.val = as.numeric(use_cor_self_report_form_model$reg_table$prob)))
+use_cor_self_report_form_model_results
 ```
 
 #RQ1c: Category of media use as moderator (volume or duration of usage):
@@ -580,13 +586,15 @@ use_corr_data_Duration <- use_corr_data %>% filter(Measure_Type == "Duration")
 
 use_cor_duration_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_Duration)
 use_cor_duration_model
-rm(use_corr_data_Duration)
-```
 
-```{r}
-psych::fisherz2r(0.403) 
-psych::fisherz2r(0.346) 
-psych::fisherz2r(0.459) 
+#transform
+use_cor_duration_model_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(use_cor_duration_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(use_cor_duration_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(use_cor_duration_model$reg_table$CI.U)),
+                                p.val = as.numeric(use_cor_duration_model$reg_table$prob)))
+use_cor_duration_model_results
+
+rm(use_corr_data_Duration, use_cor_duration_model_results)
 ```
 
 ```{r}
@@ -594,22 +602,27 @@ use_corr_data_Volume <- use_corr_data %>% filter(Measure_Type == "Volume")
 
 use_cor_volume_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_Volume)
 use_cor_volume_model
-rm(use_corr_data_Volume)
-```
 
-```{r}
-psych::fisherz2r(0.36) 
-psych::fisherz2r(0.243) 
-psych::fisherz2r(0.468) 
+#transform
+use_cor_volume_model_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(use_cor_volume_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(use_cor_volume_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(use_cor_volume_model$reg_table$CI.U)),
+                                p.val = as.numeric(use_cor_volume_model$reg_table$prob)))
+use_cor_volume_model_results
+
+rm(use_corr_data_Volume, use_cor_volume_model_results)
 ```
 
 ```{r}
 use_cor_self_report_category_model <- robu(formula = yi ~ Measure_Type, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data)
 use_cor_self_report_category_model
-```
 
-```{r}
-psych::fisherz2r(-0.00318) 
+#transform
+use_cor_self_report_category_model_results <- data.frame(cbind(est = as.numeric(psych::fisherz2r(use_cor_self_report_category_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(use_cor_self_report_category_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(use_cor_self_report_category_model$reg_table$CI.U)),
+                                p.val = as.numeric(use_cor_self_report_category_model$reg_table$prob)))
+use_cor_self_report_category_model_results
 ```
 
 ############## Section 7: RQ2: under- or over-reporting ############## 
@@ -623,14 +636,13 @@ acc_data <- acc_data %>%
   mutate(acc = case_when(SR_Mean > (Log_Mean + 0.05*Log_Mean) ~ "over",
                                     SR_Mean < (Log_Mean - 0.05*Log_Mean) ~ "under",
                                     TRUE ~ "accurate"))
-```
 
-```{r}
 acc_data %>% 
   group_by(acc) %>% 
   summarise(n = n()) %>%
   mutate((freq = n / sum(n))*100)
 ```
+
 ## RE model
 First calculate random effects model with metafor (used for visualisation). After this, use robumeta::robu to calculate model with RVE (using correlational weighting scheme).
 ```{r}
@@ -638,23 +650,18 @@ rq2_model <- rma.uni(yi=yi, vi = vi, data=acc_data, level = 95, digits = 7)
 rq2_model
 ```
 
-# Transform from log
-```{r}
-log_transform_mod <- predict(rq2_model, digits=7, transf = exp) 
-log_transform_mod
-```
-
 # Use robu to calculate RVE
 ```{r}
-res <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data)
+rq2_model_robu <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data)
 
-res #note, these have not been transformed from log to exp
-```
+rq2_model_robu #note, these have not been transformed from log to exp
 
-```{r}
-exp(0.178)
-exp(-0.066)
-exp(0.423)
+#back-transform
+rq2_model_results <- data.frame(cbind(RR = as.numeric(exp(rq2_model_robu$reg_table$b.r)),
+                                CI.L = as.numeric(exp(rq2_model_robu$reg_table$CI.L)),
+                                CI.U = as.numeric(exp(rq2_model_robu$reg_table$CI.U)),
+                                p.val = as.numeric(rq2_model_robu$reg_table$prob)))
+rq2_model_results
 ```
 
 # Test for small study bias
@@ -662,7 +669,6 @@ exp(0.423)
 funnel(rq2_model)
 ```
 # Eggers regression test incorporating robust variance estimation (RVE)
-
 ```{r}
 egg_sndwich_se <- robu_func(formula = yi ~  1 + sqrt(vi), dat = acc_data, fit = "RVE")
 egg_sndwich_se
@@ -673,27 +679,24 @@ egg_sndwich_se
 #export to pdf
 pdf(file='figures/acc_funnel.pdf', height=10, width=12)
 cefp <- funnel(rq2_model, level=c(90, 95, 99), 
-               shade=c("white", "gray55", "gray75"), 
+               shade=c("white", "#5C6BC0", "#9FA8DA"), 
                atransf = exp,
-               #refline=0,
                legend=TRUE)   
 dev.off() 
 
 #export to low res png
 png('figures/acc_funnel_low_res.png',units="in", height=10, width=12, res=300)
 cefp <- funnel(rq2_model, level=c(90, 95, 99), 
-               shade=c("white", "gray55", "gray75"), 
+               shade=c("white", "#5C6BC0", "#9FA8DA"), 
                atransf = exp,
-               #refline=0,
                legend=TRUE)   
 dev.off() 
 
 #export to high res png
 png('figures/acc_funnel_high_res.png',units="in", height=10, width=12, res=800)
 cefp <- funnel(rq2_model, level=c(90, 95, 99), 
-               shade=c("white", "gray55", "gray75"), 
+               shade=c("white", "#5C6BC0", "#9FA8DA"), 
                atransf = exp,
-               #refline=0,
                legend=TRUE)   
 dev.off() 
 ```
@@ -718,13 +721,14 @@ acc_data_no_outlier <- acc_data %>% filter(effect_ID != "P15S1C2")
 acc_no_outlier_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data_no_outlier)
 acc_no_outlier_model #note, these have not been transformed from log to exp yet
 
-rm(acc_data_no_outlier)
-```
+#back-transform
+acc_no_outlier_model_results <- data.frame(cbind(RR = as.numeric(exp(acc_no_outlier_model$reg_table$b.r)),
+                                CI.L = as.numeric(exp(acc_no_outlier_model$reg_table$CI.L)),
+                                CI.U = as.numeric(exp(acc_no_outlier_model$reg_table$CI.U)),
+                                p.val = as.numeric(acc_no_outlier_model$reg_table$prob)))
+acc_no_outlier_model_results
 
-```{r}
-exp(0.158)
-exp(-0.064)
-exp(0.381)
+rm(acc_data_no_outlier, acc_no_outlier_model_results)
 ```
 
 # sensitvity analysis for publication status:
@@ -734,15 +738,15 @@ acc_data_Pub <- acc_data %>%  filter(Source_Type == "Published")
 acc_published_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data_Pub)
 acc_published_model
 
-rm(acc_data_Pub)
-```
+#back-transform
+acc_published_model_results <- data.frame(cbind(RR = as.numeric(exp(acc_published_model$reg_table$b.r)),
+                                CI.L = as.numeric(exp(acc_published_model$reg_table$CI.L)),
+                                CI.U = as.numeric(exp(acc_published_model$reg_table$CI.U)),
+                                p.val = as.numeric(acc_published_model$reg_table$prob)))
+acc_published_model_results
 
-```{r}
-exp(0.252) 
-exp(-0.04) 
-exp(0.544) 
+rm(acc_data_Pub, acc_published_model_results)
 ```
-
 
 ```{r}
 acc_data_UnPub <- acc_data %>%  filter(Source_Type == "Unpublished")
@@ -750,13 +754,14 @@ acc_data_UnPub <- acc_data %>%  filter(Source_Type == "Unpublished")
 acc_unpublished_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data_UnPub)
 acc_unpublished_model
 
-rm(acc_data_UnPub)
-```
+#back-transform
+acc_unpublished_model_results <- data.frame(cbind(RR = as.numeric(exp(acc_unpublished_model$reg_table$b.r)),
+                                CI.L = as.numeric(exp(acc_unpublished_model$reg_table$CI.L)),
+                                CI.U = as.numeric(exp(acc_unpublished_model$reg_table$CI.U)),
+                                p.val = as.numeric(acc_unpublished_model$reg_table$prob)))
+acc_unpublished_model_results
 
-```{r}
-exp(-0.113) 
-exp(-0.559) 
-exp(0.333) 
+rm(acc_data_UnPub, acc_unpublished_model_results)
 ```
 
 #moderator analysis for publication status
@@ -765,6 +770,14 @@ acc_publication_status_moderator_model <- robu(formula = yi ~ Source_Type, var.e
 acc_publication_status_moderator_model
 ```
 
+```{r}
+#back-transform
+acc_publication_status_moderator_model_results <- data.frame(cbind(est = as.numeric(exp(acc_publication_status_moderator_model$reg_table$b.r)),
+                                CI.L = as.numeric(exp(acc_publication_status_moderator_model$reg_table$CI.L)),
+                                CI.U = as.numeric(exp(acc_publication_status_moderator_model$reg_table$CI.U)),
+                                p.val = as.numeric(acc_publication_status_moderator_model$reg_table$prob)))
+acc_publication_status_moderator_model_results
+```
 ## Sensitivity analysis excluding effect of two digitised studies
 
 ```{r}
@@ -774,13 +787,14 @@ acc_data_non_digitised <- acc_data %>%
 acc_non_digitised_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data_non_digitised)
 acc_non_digitised_model
 
-rm(acc_data_non_digitised)
-```
+#back-transform
+acc_non_digitised_model_results <- data.frame(cbind(RR = as.numeric(exp(acc_non_digitised_model$reg_table$b.r)),
+                                CI.L = as.numeric(exp(acc_non_digitised_model$reg_table$CI.L)),
+                                CI.U = as.numeric(exp(acc_non_digitised_model$reg_table$CI.U)),
+                                p.val = as.numeric(acc_non_digitised_model$reg_table$prob)))
+acc_non_digitised_model_results
 
-```{r}
-exp(0.179)
-exp(-0.0755)
-exp(0.434)
+rm(acc_data_non_digitised, acc_non_digitised_model_results)
 ```
 
 # Forest plot
@@ -850,20 +864,36 @@ dev.off
 acc_data %>% dplyr::select(medium) %>% group_by(medium) %>% tally()
 ```
 
-Because only sufficient data for a single moderator level, will not perform moderator analysis, but will perform a subgroup analysis
 ```{r}
 acc_data_phone <- acc_data %>% filter(medium == "Phone")
 
 acc_phone_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data_phone)
 acc_phone_model
 
-rm(acc_data_phone)
+#back-transform
+acc_phone_model_results <- data.frame(cbind(RR = as.numeric(exp(acc_phone_model$reg_table$b.r)),
+                                CI.L = as.numeric(exp(acc_phone_model$reg_table$CI.L)),
+                                CI.U = as.numeric(exp(acc_phone_model$reg_table$CI.U)),
+                                p.val = as.numeric(acc_phone_model$reg_table$prob)))
+acc_phone_model_results
+
+rm(acc_data_phone, acc_phone_model_results)
 ```
 
 ```{r}
-exp(0.0555)
-exp(-0.165)
-exp(0.276)
+acc_data_soc_med <- acc_data %>% filter(medium == "Social Media")
+
+acc_socmed_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data_soc_med)
+acc_socmed_model
+
+#back-transform
+acc_socmed_model_results <- data.frame(cbind(RR = as.numeric(exp(acc_socmed_model$reg_table$b.r)),
+                                CI.L = as.numeric(exp(acc_socmed_model$reg_table$CI.L)),
+                                CI.U = as.numeric(exp(acc_socmed_model$reg_table$CI.U)),
+                                p.val = as.numeric(acc_socmed_model$reg_table$prob)))
+acc_socmed_model_results
+
+rm(acc_socmed_model, acc_socmed_model_results)
 ```
 
 #RQ3b category of media use (duration or volume) as moderator
@@ -877,13 +907,14 @@ acc_data_duration <- acc_data %>% filter(Measure_Type == "Duration")
 acc_duration_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data_duration)
 acc_duration_model
 
-rm(acc_data_duration)
-```
+#back-transform
+acc_duration_model_results <- data.frame(cbind(RR = as.numeric(exp(acc_duration_model$reg_table$b.r)),
+                                CI.L = as.numeric(exp(acc_duration_model$reg_table$CI.L)),
+                                CI.U = as.numeric(exp(acc_duration_model$reg_table$CI.U)),
+                                p.val = as.numeric(acc_duration_model$reg_table$prob)))
+acc_duration_model_results
 
-```{r}
-exp(0.248)
-exp(-0.00193)
-exp(0.498)
+rm(acc_data_duration, acc_duration_model_results)
 ```
 
 ```{r}
@@ -893,18 +924,27 @@ acc_data_volume <- acc_data %>%
 acc_volume_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data_volume)
 acc_volume_model
 
-rm(acc_data_volume)
-```
+#back-transform
+acc_volume_model_results <- data.frame(cbind(RR = as.numeric(exp(acc_volume_model$reg_table$b.r)),
+                                CI.L = as.numeric(exp(acc_volume_model$reg_table$CI.L)),
+                                CI.U = as.numeric(exp(acc_volume_model$reg_table$CI.U)),
+                                p.val = as.numeric(acc_volume_model$reg_table$prob)))
+acc_volume_model_results
 
-```{r}
-exp(-0.228)
-exp(-0.563)
-exp(0.107)
+rm(acc_data_volume, acc_volume_model_results)
 ```
 
 ```{r}
 acc_self_report_category_moderator_model <- robu(formula = yi ~ Measure_Type, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data)
 acc_self_report_category_moderator_model
+
+#back-transform
+acc_self_report_category_moderator_model_results <- data.frame(cbind(RR = as.numeric(exp(acc_self_report_category_moderator_model$reg_table$b.r)),
+                                CI.L = as.numeric(exp(acc_self_report_category_moderator_model$reg_table$CI.L)),
+                                CI.U = as.numeric(exp(acc_self_report_category_moderator_model$reg_table$CI.U)),
+                                p.val = as.numeric(acc_self_report_category_moderator_model$reg_table$prob)))
+acc_self_report_category_moderator_model_results
+rm(acc_self_report_category_moderator_model_results)
 ```
 
 ############## Section 9: H1 RE model: prob-use-correlations ############## 
@@ -914,23 +954,18 @@ h2_model <- rma.uni(yi=yi, vi = vi, data=prob_use_corr_data, level = 95, digits 
 h2_model
 ```
 
-# Perform Fisher's z-to-r for reporting
-```{r}
-h2_ztor_model <- predict(h2_model, digits=7, transf = transf.ztor) 
-h2_ztor_model
-```
-
 # Use robu to get RVE (using CORR for model weights)
 ```{r}
 h2_model_robu <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = prob_use_corr_data)
 
 h2_model_robu #note, these have not been transformed from z to r yet.
-```
 
-```{r}
-psych::fisherz2r(0.251)
-psych::fisherz2r(0.199)
-psych::fisherz2r(0.302)
+#transform
+h2_model_robu_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(h2_model_robu$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(h2_model_robu$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(h2_model_robu$reg_table$CI.U)),
+                                p.val = as.numeric(h2_model_robu$reg_table$prob)))
+h2_model_robu_results
 ```
 
 # Equivalence test for overall analysis
@@ -939,13 +974,13 @@ psych::fisherz2r(0.302)
 #first need to convert from r to d as TOSTmeta is only compatible with Cohen's d at present. This will result in some loss of precision but, in the context of this analysis, this is acceptable and won't impact the overall outcome.
 
 #lower confidence interval
-lower_conf <- (2*0.1964141)/(sqrt(1-0.1964141^2))
+lower_conf <- (2*h2_model_robu_results$CI.L)/(sqrt(1-h2_model_robu_results$CI.L^2))
 
 #upper confidence interval
-upper_conf <- (2*0.2931418)/(sqrt(1-0.2931418^2))
+upper_conf <- (2*h2_model_robu_results$CI.U)/(sqrt(1-h2_model_robu_results$CI.U^2))
 
 #effect size
-ES_r_to_d <- (2*0.2458584)/(sqrt(1-0.2458584^2)) 
+ES_r_to_d <- (2*h2_model_robu_results$r)/(sqrt(1-h2_model_robu_results$r^2)) 
 
 # lower equivalence bound
 lower_bound <- (2*-0.1)/(sqrt(1-(-0.1)^2)) #-0.2010076
@@ -958,7 +993,6 @@ es.se <- (upper_conf - lower_conf)/(2*1.96)
 
 TOSTmeta(ES=ES_r_to_d, se = es.se, low_eqbound_d = lower_bound, high_eqbound_d = upper_bound, alpha = 0.05)
 ```
-
 # Egger's regression test
 ```{r}
 funnel(h2_model)
@@ -974,27 +1008,23 @@ egg_sndwich_se
 #export to pdf
 pdf(file='figures/prob_use_cor_funnel.pdf', height=10, width=12)
 cefp <- funnel(h2_model, level=c(90, 95, 99), 
-               shade=c("white", "gray55", "gray75"), 
+               shade=c("white", "#5C6BC0", "#9FA8DA"), 
                atransf = transf.ztor,
-               #refline=0,
                legend=TRUE)   
 dev.off() 
 
 #export to low res png
 png('figures/prob_use_cor_funnel_low_res.png',units="in", height=10, width=12, res=300)
 cefp <- funnel(h2_model, level=c(90, 95, 99), 
-               shade=c("white", "gray55", "gray75"), 
+               shade=c("white", "#5C6BC0", "#9FA8DA"), 
                atransf = transf.ztor,
-               #refline=0,
                legend=TRUE)   
 dev.off() 
 
 #export to high res png
 png('figures/prob_use_cor_funnel_high_res.png',units="in", height=10, width=12, res=800)
 cefp <- funnel(h2_model, level=c(90, 95, 99), 
-               shade=c("white", "gray55", "gray75"), 
                atransf = transf.ztor,
-               #refline=0,
                legend=TRUE)   
 dev.off() 
 ```
@@ -1013,16 +1043,17 @@ prob_use_corr_Pub <- prob_use_corr_data %>%  filter(Source_Type == "Published")
 prob_use_corr_Pub_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = prob_use_corr_Pub)
 prob_use_corr_Pub_model
 
-rm(prob_use_corr_Pub)
+#transform
+prob_use_corr_Pub_model_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(prob_use_corr_Pub_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(prob_use_corr_Pub_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(prob_use_corr_Pub_model$reg_table$CI.U)),
+                                p.val = as.numeric(prob_use_corr_Pub_model$reg_table$prob)))
+prob_use_corr_Pub_model_results
+
+rm(prob_use_corr_Pub,prob_use_corr_Pub_model_results)
 ```
 
-```{r}
-psych::fisherz2r(0.256) 
-psych::fisherz2r(0.196) 
-psych::fisherz2r(0.316) 
-```
-
-Note, for the below there is an insufficent number of unpublished studies to conduct the analysis with robu. Therefore, will use rma.uni.
+Note, for the below there is an insufficient number of unpublished studies to conduct the analysis with robu. Therefore, will use rma.uni.
 ```{r}
 prob_use_corr_UnPub <- prob_use_corr_data %>%  filter(Source_Type == "Unpublished")
 
@@ -1033,12 +1064,6 @@ prob_use_corr_UnPub_model_ztor <- predict(prob_use_corr_UnPub_model, digits=7, t
 prob_use_corr_UnPub_model_ztor
 
 rm(prob_use_corr_UnPub)
-```
-
-#moderator analysis for publication status
-```{r}
-prob_use_cor_pub_status_moderator_model <- robu(formula = yi ~ Source_Type, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = prob_use_corr_data)
-prob_use_cor_pub_status_moderator_model
 ```
 
 ```{r}
