@@ -1166,6 +1166,7 @@ funnel(h2_model, level=c(90, 95, 99),
 funnel(rq2_model, level=c(90, 95, 99), 
                shade=c("gray75", "#5C6BC0", "#9FA8DA"), 
                atransf = exp,
+               xlab = "Ratio of Means",
                back = "white",
                main="C. Reporting Accuracy",
                cex=1.5, cex.lab=1.5, cex.axis=1.5, cex.main=1.5)  
