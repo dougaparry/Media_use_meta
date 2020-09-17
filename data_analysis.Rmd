@@ -1137,59 +1137,20 @@ dev.off
 
 ############## Section 10: combined funnel plot figure ############## 
 
-```{r}
-par(mfrow = c(1,3))
-
-funnel(h1_model, level=c(90, 95, 99), 
-               shade=c("white", "#5C6BC0", "#9FA8DA"), 
-               atransf = transf.ztor,
-               legend=TRUE)   
-
-funnel(h2_model, level=c(90, 95, 99), 
-               shade=c("white", "#5C6BC0", "#9FA8DA"), 
-               atransf = transf.ztor,
-               legend=TRUE)   
-
-funnel(rq2_model, level=c(90, 95, 99), 
-               shade=c("white", "#5C6BC0", "#9FA8DA"), 
-               atransf = exp,
-               legend=TRUE)  
-
-
-```
-```{r}
-par(mfrow = c(3,1))
-
-funnel(h1_model, level=c(90, 95, 99), 
-               shade=c("white", "#5C6BC0", "#9FA8DA"), 
-               atransf = transf.ztor,
-               legend=TRUE)   
-
-funnel(h2_model, level=c(90, 95, 99), 
-               shade=c("white", "#5C6BC0", "#9FA8DA"), 
-               atransf = transf.ztor,
-               legend=TRUE)   
-
-funnel(rq2_model, level=c(90, 95, 99), 
-               shade=c("white", "#5C6BC0", "#9FA8DA"), 
-               atransf = exp,
-               legend=TRUE)  
-
-
-```
 # Side by side
-back to change background colour...
 ```{r}
-png(file='figures/combined_funnel_side_by_side.png', units = "in", height=8, width=18, res=300)
+create_side_by_side_funnel <- function(){
 
-layout(matrix(c(1,2,3), nrow=1, ncol=3),
-       height = 1,
+layout(matrix(c(1,2,3,4,4,4),ncol=3, byrow=TRUE),
+       heights = c(3,0.3),
        width=c(2,2,2))
+par(mai = c(1,0.65,1,0.5))
+
 
 funnel(h1_model, level=c(90, 95, 99), 
                shade=c("gray75", "#5C6BC0", "#9FA8DA"), 
                atransf = transf.ztor,
-               legend=TRUE,
+               #legend=TRUE,
                back = "white",
                main="A. Media Use",
                cex=1.5, cex.lab=1.5, cex.axis=1.5, cex.main=1.5)   
@@ -1197,7 +1158,7 @@ funnel(h1_model, level=c(90, 95, 99),
 funnel(h2_model, level=c(90, 95, 99), 
                shade=c("gray75", "#5C6BC0", "#9FA8DA"), 
                atransf = transf.ztor,
-               legend=TRUE,
+              # legend=TRUE,
                back = "white",
                main="B. Problematic Media Use", 
                cex=1.5, cex.lab=1.5, cex.axis=1.5, cex.main=1.5)   
@@ -1209,15 +1170,44 @@ funnel(rq2_model, level=c(90, 95, 99),
                main="C. Reporting Accuracy",
                cex=1.5, cex.lab=1.5, cex.axis=1.5, cex.main=1.5)  
 
-legend("topright", pch = 1, pt.cex = c(rep(0,4), 2), 
-       cex = 1.5, inset = 0.01, bg = "white", 
+par(mai=c(0,0,0,0))
+plot.new()
+par(xpd=NA)
+legend(x = "top", pch = 1, pt.cex = c(rep(0,4), 2), 
+       cex = 2, inset = 0.01, bg = "white", 
        pt.bg <- c("gray75", "#5C6BC0", "#9FA8DA", "white"),
        legend = c("0.10 < p \u2264 1.00", "0.05 < p \u2264 0.10", "0.01 < p \u2264 0.05", "0.00 < p \u2264 0.01"),
-       fill = c("gray75", "#5C6BC0", "#9FA8DA", "white"))
+       fill = c("gray75", "#5C6BC0", "#9FA8DA", "white"), horiz = TRUE, xpd=NA)
+
+}
+```
+
+```{r}
+png(file='figures/combined_funnel_side_by_side_low_res.png', units = "in", height=8, width=18, res=300)
+
+create_side_by_side_funnel()
+
 dev.off
 ```
 
+```{r}
+png(file='figures/combined_funnel_side_by_side_high_res.png', units = "in", height=8, width=18, res=800)
 
+create_side_by_side_funnel()
+
+par(font=2)
+dev.off
+```
+
+Export PDF
+```{r}
+pdf(file='figures/combined_funnel_side_by_side.pdf', height=8, width=18)
+
+create_side_by_side_funnel()
+
+par(font=2)
+dev.off
+```
 
 # Clean up environment
 ```{r}
