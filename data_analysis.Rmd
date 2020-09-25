@@ -10,6 +10,10 @@ This is the analysis code for a meta-analysis on the associations between self-r
 
 The code was written in R version 4.0.2 using RMarkdown (available at: http://rmarkdown.rstudio.com/). The particular versions used for all packages is provided below. It is recommended that this file be downloaded and viewed in RStudio to view the output of the code.
 
+Note on expected directory structure.
+
+- This analysis file (data_analysis.Rmd) expects the file Data_Extraction.xlsx to be in the same directory. All other directories and files are created by the script itself.
+
 ############## Section 1: Setup ############## 
 
 # Load packages, clear environment, set seed, and turn scientific notation off
