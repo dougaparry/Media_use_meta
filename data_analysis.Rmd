@@ -20,7 +20,7 @@ set.seed(42)
 
 if (!require("pacman")) install.packages("pacman"); 
 library(pacman)
-pacman::p_load(tidyverse, dplyr, metafor, MAc, clubSandwich, readxl, TOSTER, robumeta)
+pacman::p_load(tidyverse, dplyr, metafor, MAc, clubSandwich, readxl, TOSTER, robumeta, psych)
 
 #Create expected directory structure:
 
