@@ -21,6 +21,12 @@ set.seed(42)
 if (!require("pacman")) install.packages("pacman"); 
 library(pacman)
 pacman::p_load(tidyverse, dplyr, metafor, MAc, clubSandwich, readxl, TOSTER, robumeta)
+
+#Create expected directory structure:
+
+wd <- getwd()
+if (!dir.exists("clean_data")) {dir.create(file.path(wd, "clean_data"))}
+if (!dir.exists("figures")) {dir.create(file.path(wd, "figures"))}
 ```
 
 # Information on the packages used for the analysis
@@ -32,7 +38,7 @@ sessionInfo()
 
 # Import and transform raw data 
 ```{r}
-raw_data <-read_excel("raw_data/Data_Extraction.xlsx", na="NA")
+raw_data <-read_excel("Data_Extraction.xlsx", na="NA")
 
 raw_data <- raw_data %>% mutate(effect_ID = paste0(Study_ID, Comparison_ID))
 
@@ -416,7 +422,7 @@ par(mar=c(3.5,3.5,0.2,1.5))
 produce_use_cor_forest()
 
 par(font=2)
-dev.off
+dev.off()
 ```
 
 ### Export as png (low res)
@@ -427,7 +433,7 @@ par(mar=c(3.5,3.5,0.2,1.5))
 produce_use_cor_forest()
 
 par(font=2)
-dev.off
+dev.off()
 ```
 
 ### Export as png (high res)
@@ -438,7 +444,7 @@ par(mar=c(3.5,3.5,0.2,1.5))
 produce_use_cor_forest()
 
 par(font=2)
-dev.off
+dev.off()
 ```
 
 ############## Section 6: RQ1: Moderators of H1 ############## 
@@ -833,7 +839,7 @@ par(mar=c(4,3.6,0.2,1.5))
 produce_acc_forest_plot()
 
 par(font=2)
-dev.off
+dev.off()
 ```
 
 Export as png (low res)
@@ -844,7 +850,7 @@ par(mar=c(3.5,3.5,0.2,1.5))
 produce_acc_forest_plot()
 
 par(font=2)
-dev.off
+dev.off()
 ```
 
 Export as png (high res)
@@ -855,7 +861,7 @@ par(mar=c(3.5,3.5,0.2,1.5))
 produce_acc_forest_plot()
 
 par(font=2)
-dev.off
+dev.off()
 ```
 
 ############## Section 8: RQ3: moderators of RQ2 ############## 
@@ -1108,7 +1114,7 @@ par(mar=c(4,3.6,0.2,1.5))
 produce_prob_use_corr_forest_plot()
 
 par(font=2)
-dev.off
+dev.off()
 ```
 
 Export as png (low res)
@@ -1120,7 +1126,7 @@ par(mar=c(3.5,3.5,0.2,1.5))
 produce_prob_use_corr_forest_plot()
 
 par(font=2)
-dev.off
+dev.off()
 ```
 
 Export as png (high res)
@@ -1132,7 +1138,7 @@ par(mar=c(3.5,3.5,0.2,1.5))
 produce_prob_use_corr_forest_plot()
 
 par(font=2)
-dev.off
+dev.off()
 ```
 
 ############## Section 10: combined funnel plot figure ############## 
@@ -1188,7 +1194,7 @@ png(file='figures/combined_funnel_side_by_side_low_res.png', units = "in", heigh
 
 create_side_by_side_funnel()
 
-dev.off
+dev.off()
 ```
 
 ```{r}
@@ -1197,7 +1203,7 @@ png(file='figures/combined_funnel_side_by_side_high_res.png', units = "in", heig
 create_side_by_side_funnel()
 
 par(font=2)
-dev.off
+dev.off()
 ```
 
 Export PDF
@@ -1207,7 +1213,7 @@ pdf(file='figures/combined_funnel_side_by_side.pdf', height=8, width=18)
 create_side_by_side_funnel()
 
 par(font=2)
-dev.off
+dev.off()
 ```
 
 # Clean up environment
