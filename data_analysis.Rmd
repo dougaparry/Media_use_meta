@@ -8,7 +8,7 @@ output: html_document
 
 This is the analysis code for a meta-analysis on the associations between self-reported and logged measures of digital media use.
 
-The code was written in R version 4.0.2 using RMarkdown (available at: http://rmarkdown.rstudio.com/). The particular versions used for all packages is provided below. It is recommended that this file be downloaded and viewed in RStudio to view the output of the code.
+The code was written in R version 4.0.2 using RMarkdown (available at: http://rmarkdown.rstudio.com/). It is recommended that this file be downloaded and viewed in RStudio to view the output of the code.
 
 Note on expected directory structure.
 
@@ -122,6 +122,7 @@ use_corr_data %>% summarise(mean_n = mean(N),
 
 use_corr_data %>% group_by(Population) %>% tally()
 ```
+
 ### prob use cor descriptives
 ```{r}
 n_distinct(prob_use_corr_data$Paper_ID)
@@ -136,6 +137,7 @@ prob_use_corr_data %>% summarise(mean_n = mean(N),
 
 prob_use_corr_data %>% group_by(Population) %>% tally()
 ```
+
 ### acc, under/over descriptives
 ```{r}
 n_distinct(acc_data$Paper_ID)
@@ -150,6 +152,7 @@ acc_data %>% summarise(mean_n = mean(N),
 
 acc_data %>% group_by(Population) %>% tally()
 ```
+
 ############## Section 4: Effect Size Calculations ############## 
 
 ## Use correlations
@@ -196,7 +199,6 @@ h1_ztor_model
 ```
 
 # Use robu to get RVE (using CORR for model weights)
-
 ```{r}
 H1_model_robu <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data)
 
@@ -209,8 +211,8 @@ H1_model_robu_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(H1_mod
                                 p.val = as.numeric(H1_model_robu$reg_table$prob)))
 H1_model_robu_results
 ```
-# Equivalence test for overall analysis
 
+# Equivalence test for overall analysis
 ```{r}
 #first need to convert from r to d as TOSTmeta is only compatible with Cohen's d at present. This will result in some loss of precision but, in the context of this analysis, this is acceptable and won't impact the overall outcome.
 
@@ -234,11 +236,12 @@ es.se <- (upper_conf - lower_conf)/(2*1.96)
 
 TOSTmeta(ES=ES_r_to_d, se = es.se, low_eqbound_d = lower_bound, high_eqbound_d = upper_bound, alpha = 0.05)
 ```
-# Test for small study bias
 
+# Test for small study bias
 ```{r}
 funnel(h1_model)
 ```
+
 # Eggers regression test incorporating robust variance estimation (RVE)
 
 Code adapted from: Evaluating Meta-Analytic Methods to Detect Selective Reporting in the Presence of Dependent Effect Sizes (Rodgers and Pustejovsky). Available at: https://osf.io/preprints/metaarxiv/vqp8u/ (peer-reviewed DOI: 10.1037/met0000300). Code https://osf.io/7ak2m/?view_only=e74f9ddad3834e0e8c0bae9ef6b0441c
@@ -259,13 +262,14 @@ robu_func <- function(formula, dat, fit){
 }
 ```
 
-Run Egger Sandwich Test
+# Run Egger Sandwich Test
 ```{r}
 egg_sndwich_se <- robu_func(formula = yi ~  1 + sqrt(vi), dat = use_corr_data, fit = "RVE")
 egg_sndwich_se
 ```
 
 # Contour enhanced funnel plot
+Later in the code a combined, paneled version for all analyses is produced
 ```{r}
 #export to pdf
 pdf(file='figures/use_cor_funnel.pdf', height=10, width=12)
