@@ -826,10 +826,9 @@ forest(rq2_model,
        header="Author(s) and Year",
        addfit = FALSE,
        ilab=as.character(acc_data$Measure_Type), ilab.xpos = -5,
-       order="obs",
-       efac=c(0,1,1.5)) 
+       order="obs") 
 
-addpoly(x = 0.183, ci.lb = -0.0625, ci.ub = 0.428, transf = exp, row=-0.8, mlab="", cex=1)
+addpoly(x = rq2_model_robu$reg_table$b.r, ci.lb = rq2_model_robu$reg_table$CI.L, ci.ub = rq2_model_robu$reg_table$CI.U, transf = exp, row=-0.8, mlab="", cex=1)
 abline(h=0.45)
   
 text(-5, 51, "Use Category", font=2)
@@ -837,6 +836,43 @@ text(-5, 51, "Use Category", font=2)
 text(-35, -0.8, pos=4, "RE Model with RVE (using correlational weighting scheme)", font=2)
 
 }
+
+```
+
+```{r}
+produce_acc_forest_plot_log <- function(){
+
+forest(rq2_model, 
+       #transf=exp, 
+       alim=c(-1.5, 4), xlim=c(-10,7),
+       refline=0,
+       slab=acc_data$slab,
+       mlab = "",
+       header="Author(s) and Year",
+       addfit = FALSE,
+       ilab=as.character(acc_data$Measure_Type), ilab.xpos = -2.7,
+       order="obs") 
+
+addpoly(x = rq2_model_robu$reg_table$b.r, ci.lb = rq2_model_robu$reg_table$CI.L, ci.ub = rq2_model_robu$reg_table$CI.U, row=-0.8, mlab="", cex=1)
+abline(h=0.45)
+  
+text(-2.7, 51, "Use Category", font=2)
+
+text(-10, -0.8, pos=4, "RE Model with RVE (using correlational weighting scheme)", font=2)
+
+}
+
+```
+
+Export PDF-log
+```{r}
+pdf(file='figures/acc_log_forest.pdf', height=12, width=10)
+par(mar=c(4,3.6,0.2,1.5))
+
+produce_acc_forest_plot_log()
+
+par(font=2)
+dev.off()
 ```
 
 Export PDF
@@ -856,6 +892,28 @@ png(file='figures/acc_forest_low_res.png', units = "in", height=13.5, width=10, 
 par(mar=c(3.5,3.5,0.2,1.5))
 
 produce_acc_forest_plot()
+
+par(font=2)
+dev.off()
+```
+
+Export as png (low res)
+```{r}
+png(file='figures/acc_forest_low_res.png', units = "in", height=13.5, width=10, res=300)
+par(mar=c(3.5,3.5,0.2,1.5))
+
+produce_acc_forest_plot_log()
+
+par(font=2)
+dev.off()
+```
+
+Export as png (high res)
+```{r}
+png(file='figures/acc_forest_high_res.png', units = "in", height=13.5, width=10, res=800)
+par(mar=c(3.5,3.5,0.2,1.5))
+
+produce_acc_forest_plot_log()
 
 par(font=2)
 dev.off()
@@ -1099,8 +1157,7 @@ produce_prob_use_corr_forest_plot <- function(){
        xlab="Correlation Coefficient",
        mlab = "",
        addfit = FALSE,
-       ilab=as.character(prob_use_corr_data$SR_PROB_Label), ilab.xpos = -1.2,
-       efac=c(0,1,1.5)) 
+       ilab=as.character(prob_use_corr_data$SR_PROB_Label), ilab.xpos = -1.2) 
 
 addpoly(x = 0.253, ci.lb = 0.202, ci.ub = 0.305, atransf=transf.ztor, row=-0.6, mlab="", cex=1)
 abline(h = 0.45)
