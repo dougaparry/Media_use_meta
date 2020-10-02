@@ -236,7 +236,6 @@ es.se <- (upper_conf - lower_conf)/(2*1.96)
 
 TOSTmeta(ES=ES_r_to_d, se = es.se, low_eqbound_d = lower_bound, high_eqbound_d = upper_bound, alpha = 0.05)
 ```
-
 # Test for small study bias
 ```{r}
 funnel(h1_model)
@@ -391,6 +390,24 @@ use_cor_non_digitised_model_results
 rm(use_corr_data_non_digitised, use_cor_non_digitised_model_results)
 ```
 
+## Sensitivity analysis excluding additionally included effect
+```{r}
+use_corr_data_non_late <- use_corr_data %>%  filter(Study_ID != "P47S1")
+
+use_cor_non_late_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_non_late)
+use_cor_non_digitised_model
+
+#transform
+use_cor_non_late_model_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(use_cor_non_late_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(use_cor_non_late_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(use_cor_non_late_model$reg_table$CI.U)),
+                                p.val = as.numeric(use_cor_non_late_model$reg_table$prob)))
+use_cor_non_late_model_results
+
+rm(use_corr_data_non_late, use_cor_non_late_model_results)
+```
+
+
 # Produce forest plot for H1
 The forest plot is produced and exported in 3 formats: pdf, low-res png and high-res png.
 
@@ -414,11 +431,11 @@ addpoly(x = 0.398, ci.lb = 0.345, ci.ub = 0.449, atransf=transf.ztor, row=-1, ml
 
 abline(h = 0.45)
 
-text(-0.9, 66, "Medium", font=2)
+text(-0.9, 68, "Medium", font=2)
 #text(-3.9, -1, pos=4, "RE Model", font=2)
 text(-3.9, -1, pos=4, "RE Model with RVE (using correlational weighting scheme)", font=2)
 
-segments(transf.rtoz(0.5), -5, transf.rtoz(0.5), 65, lty="dotted") #extra line at r=0.5
+segments(transf.rtoz(0.5), -5, transf.rtoz(0.5), 67, lty="dotted") #extra line at r=0.5
 }
 ```
 
@@ -901,7 +918,7 @@ dev.off()
 
 Export as png (low res)
 ```{r}
-png(file='figures/acc_forest_low_res.png', units = "in", height=13.5, width=10, res=300)
+png(file='figures/acc_forest_log_low_res.png', units = "in", height=13.5, width=10, res=300)
 par(mar=c(3.5,3.5,0.2,1.5))
 
 produce_acc_forest_plot_log()
@@ -912,7 +929,7 @@ dev.off()
 
 Export as png (high res)
 ```{r}
-png(file='figures/acc_forest_high_res.png', units = "in", height=13.5, width=10, res=800)
+png(file='figures/acc_forest_log_high_res.png', units = "in", height=13.5, width=10, res=800)
 par(mar=c(3.5,3.5,0.2,1.5))
 
 produce_acc_forest_plot_log()
