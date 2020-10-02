@@ -844,6 +844,7 @@ produce_acc_forest_plot_log <- function(){
 
 forest(rq2_model, 
        #transf=exp, 
+       atransf=exp,
        alim=c(-1.5, 4), xlim=c(-10,7),
        refline=0,
        slab=acc_data$slab,
@@ -853,7 +854,8 @@ forest(rq2_model,
        ilab=as.character(acc_data$Measure_Type), ilab.xpos = -2.7,
        order="obs") 
 
-addpoly(x = rq2_model_robu$reg_table$b.r, ci.lb = rq2_model_robu$reg_table$CI.L, ci.ub = rq2_model_robu$reg_table$CI.U, row=-0.8, mlab="", cex=1)
+addpoly(x = rq2_model_robu$reg_table$b.r, ci.lb = rq2_model_robu$reg_table$CI.L, ci.ub = rq2_model_robu$reg_table$CI.U, row=-0.8, mlab="", cex=1, atransf=exp)
+
 abline(h=0.45)
   
 text(-2.7, 51, "Use Category", font=2)
