@@ -49,7 +49,9 @@ raw_data <- raw_data %>% mutate(effect_ID = paste0(Study_ID, Comparison_ID))
 raw_data$sr_outcome_type <- factor(raw_data$sr_outcome_type)
 raw_data$medium <- factor(raw_data$medium)
 raw_data$use_measurement <- factor(raw_data$Use_Measurement_Produced)
-raw_data$Population <- factor(raw_data$Population)
+raw_data$Population_Type <- factor(raw_data$Population_Type)
+raw_data$Sampling_Category <- factor(raw_data$Sampling_Category)
+raw_data$Log_Collection_category <- factor(raw_data$Log_Collection_category)
 raw_data$Log_Source <- factor(raw_data$Log_Source)
 raw_data$SR_Form <- factor(raw_data$SR_Form)
 raw_data$Measure_Type <- factor(raw_data$Measure_Type)
@@ -64,28 +66,35 @@ raw_data <- raw_data %>%
 
 ## Calculate Pearson correlations from Spearman correlations
 ```{r}
-#Spearman correlations approximated to Pearson correlations as per Gilpin 1993 (DOI: 10.1177/0013164493053001007) [rounded to 2 decimal places]
+#Originally Spearman correlations approximated to Pearson correlations as per Gilpin 1993 (DOI: 10.1177/0013164493053001007) [rounded to 2 decimal places]
+
+#Following review, Spearman correlations apporximated to Pearson correlations as Per
+#Rupinski, M. T., & Dunlap, W. P. (1996). Approximating Pearson productmoment correlations from Kendall’s tau and Spearman’s rho. Educa- tional and Psychological Measurement, 56, 419–429. 
+
+# r = 2*sin(r_s*(\frac{\pi}{6}))
+
+#Resulted in very minor changes.
 
 raw_data <- raw_data %>%
-  mutate(Correlation_r = as.numeric(case_when(effect_ID == "P10S4C4" ~ 0.43, #r_s = 0.4        
-                                  effect_ID == "P10S6C6" ~ 0.44, #r_s = 0.42 
-                                  effect_ID == "P13S1C1" ~ 0.09, #r_s = 0.1
-                                  effect_ID == "P13S1C2" ~ 0.31, #r_s = 0.3
-                                  effect_ID == "P23S1C1" ~ 0.52, #r_s = 0.51
-                                  effect_ID == "P24S1C2" ~ 0.37, #r_s = 0.362
-                                  effect_ID == "P24S1C1" ~ 0.38, #r_s = 0.37
-                                  effect_ID == "P25S1C1" ~ 0.22, #r_s = 0.206
-                                  effect_ID == "P34S1C1" ~ 0.40, #r_s = 0.38
-                                  effect_ID == "P37S1C1" ~ 0.40, #r_s = 0.381562
-                                  effect_ID == "P37S1C2" ~ 0.29, #r_s = 0.28938
-                                  effect_ID == "P37S2C5" ~ 0.32, #r_s = 0.31196
-                                  effect_ID == "P37S2C6" ~ 0.19, #r_s = 0.1828896
-                                  effect_ID == "P37S1C3" ~ 0.19, #r_s = 0.17596
-                                  effect_ID == "P37S1C4" ~ 0.02, #r_s = 0.01238
-                                  effect_ID == "P37S2C7" ~ 0.58, #r_s = 0.55409
-                                  effect_ID == "P37S2C8" ~ 0.28, #r_s = 0.26647
-                                  effect_ID == "P39S1C1" ~ 0.294, #r_s = 0.287
-                                  effect_ID == "P44S1C1" ~ 0.52, #r_s = 0.507
+  mutate(Correlation_r = as.numeric(case_when(effect_ID == "P10S4C4" ~ 0.4158, #r_s = 0.4        
+                                  effect_ID == "P10S6C6" ~ 0.4362, #r_s = 0.42 
+                                  effect_ID == "P13S1C1" ~ 0.1046, #r_s = 0.1
+                                  effect_ID == "P13S1C2" ~ 0.3128, #r_s = 0.3
+                                  effect_ID == "P23S1C1" ~ 0.5277, #r_s = 0.51
+                                  effect_ID == "P24S1C2" ~ 0.3747, #r_s = 0.362
+                                  effect_ID == "P24S1C1" ~ 0.3850, #r_s = 0.37
+                                  effect_ID == "P25S1C1" ~ 0.2153, #r_s = 0.206
+                                  effect_ID == "P34S1C1" ~ 0.3953, #r_s = 0.38
+                                  effect_ID == "P37S1C1" ~ 0.3969, #r_s = 0.381562
+                                  effect_ID == "P37S1C2" ~ 0.3018, #r_s = 0.28938
+                                  effect_ID == "P37S2C5" ~ 0.3252, #r_s = 0.31196
+                                  effect_ID == "P37S2C6" ~ 0.1912, #r_s = 0.1828896
+                                  effect_ID == "P37S1C3" ~ 0.1840, #r_s = 0.17596
+                                  effect_ID == "P37S1C4" ~ 0.0129, #r_s = 0.01238
+                                  effect_ID == "P37S2C7" ~ 0.5721, #r_s = 0.55409
+                                  effect_ID == "P37S2C8" ~ 0.2781, #r_s = 0.26647
+                                  effect_ID == "P39S1C1" ~ 0.2994, #r_s = 0.287
+                                  effect_ID == "P44S1C1" ~ 0.5247, #r_s = 0.507
                                   TRUE ~ as.numeric(Correlation_r))))
 ```
 
@@ -120,7 +129,15 @@ use_corr_data %>% summarise(mean_n = mean(N),
                             min_n = min(N),
                             max_n = max(N))
 
-use_corr_data %>% group_by(Population) %>% tally()
+use_corr_data %>% group_by(Population_Type) %>% tally()
+```
+
+```{r}
+use_corr_data %>% group_by(Sampling_Category) %>% tally()
+```
+
+```{r}
+use_corr_data %>% group_by(Log_Collection_category) %>% tally()
 ```
 
 ### prob use cor descriptives
@@ -135,7 +152,14 @@ prob_use_corr_data %>% summarise(mean_n = mean(N),
                             min_n = min(N),
                             max_n = max(N))
 
-prob_use_corr_data %>% group_by(Population) %>% tally()
+prob_use_corr_data %>% group_by(Population_Type) %>% tally()
+```
+```{r}
+prob_use_corr_data %>% group_by(Sampling_Category) %>% tally()
+```
+
+```{r}
+prob_use_corr_data %>% group_by(Log_Collection_category) %>% tally()
 ```
 
 ### acc, under/over descriptives
@@ -150,8 +174,17 @@ acc_data %>% summarise(mean_n = mean(N),
                             min_n = min(N),
                             max_n = max(N))
 
-acc_data %>% group_by(Population) %>% tally()
+acc_data %>% group_by(Population_Type) %>% tally()
 ```
+
+```{r}
+acc_data %>% group_by(Sampling_Category) %>% tally()
+```
+
+```{r}
+acc_data %>% group_by(Log_Collection_category) %>% tally()
+```
+
 
 ############## Section 4: Effect Size Calculations ############## 
 
@@ -325,6 +358,24 @@ use_cor_no_outlier_model_results
 rm(use_corr_data_no_outlier, use_cor_no_outlier_model_results) #remove redundant dataframe
 ```
 
+#Sensitivity analysis for correlation type (excluding sparman correlations)
+```{r}
+use_corr_data_no_spearman <- use_corr_data %>% filter(!effect_ID %in% c("P10S4C4", "P10S6C6", "P13S1C1", "P13S1C2", "P23S1C1", "P24S1C2", "P24S1C1", "P25S1C1", "P34S1C1", "P37S1C1", "P37S1C2", "P37S2C5", "P37S2C6", "P37S1C3", "P37S1C4", "P37S2C7", "P37S2C8", "P39S1C1", "P44S1C1"))
+
+use_corr_data_no_spearman_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_no_spearman)
+
+use_corr_data_no_spearman_model #note, these have not been transformed from z to r yet.
+
+#transform
+use_corr_data_no_spearman_model_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(use_corr_data_no_spearman_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(use_corr_data_no_spearman_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(use_corr_data_no_spearman_model$reg_table$CI.U)),
+                                p.val = as.numeric(use_corr_data_no_spearman_model$reg_table$prob)))
+use_corr_data_no_spearman_model_results
+
+rm(use_corr_data_no_spearman, use_corr_data_no_spearman_model_results) #remove redundant dataframe
+```
+
 # sensitvity analysis for publication status:
 ```{r}
 use_corr_data_Pub <- use_corr_data %>%  filter(Source_Type == "Published")
@@ -406,7 +457,6 @@ use_cor_non_late_model_results
 
 rm(use_corr_data_non_late, use_cor_non_late_model_results)
 ```
-
 
 # Produce forest plot for H1
 The forest plot is produced and exported in 3 formats: pdf, low-res png and high-res png.
@@ -656,6 +706,206 @@ use_cor_self_report_category_model_results <- data.frame(cbind(est = as.numeric(
 use_cor_self_report_category_model_results
 ```
 
+# Additional post hoc exploratory moderator analyses
+
+## Population
+
+### subgroups
+
+```{r}
+use_corr_data_pop_adults <- use_corr_data %>% filter(Population_Type == "adults")
+use_corr_data_pop_student <- use_corr_data %>% filter(Population_Type == "student")
+use_corr_data_pop_general <- use_corr_data %>% filter(Population_Type == "general")
+use_corr_data_pop_unknown <- use_corr_data %>% filter(Population_Type == "unknown")
+
+use_corr_data_pop_adults_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_pop_adults)
+use_corr_data_pop_student_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_pop_student)
+use_corr_data_pop_general_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_pop_general)
+use_corr_data_pop_unknown_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_pop_unknown)
+```
+
+```{r}
+use_corr_data_pop_adults_model_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(use_corr_data_pop_adults_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(use_corr_data_pop_adults_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(use_corr_data_pop_adults_model$reg_table$CI.U)),
+                                p.val = as.numeric(use_corr_data_pop_adults_model$reg_table$prob)))
+use_corr_data_pop_adults_model_results
+```
+
+```{r}
+use_corr_data_pop_student_model_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(use_corr_data_pop_student_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(use_corr_data_pop_student_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(use_corr_data_pop_student_model$reg_table$CI.U)),
+                                p.val = as.numeric(use_corr_data_pop_student_model$reg_table$prob)))
+use_corr_data_pop_student_model_results
+```
+
+```{r}
+use_corr_data_pop_general_model_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(use_corr_data_pop_general_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(use_corr_data_pop_general_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(use_corr_data_pop_general_model$reg_table$CI.U)),
+                                p.val = as.numeric(use_corr_data_pop_general_model$reg_table$prob)))
+use_corr_data_pop_general_model_results
+```
+
+```{r}
+use_corr_data_pop_unknown_model_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(use_corr_data_pop_unknown_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(use_corr_data_pop_unknown_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(use_corr_data_pop_unknown_model$reg_table$CI.U)),
+                                p.val = as.numeric(use_corr_data_pop_unknown_model$reg_table$prob)))
+use_corr_data_pop_unknown_model_results
+```
+
+```{r}
+rm(use_corr_data_pop_adults, use_corr_data_pop_student, use_corr_data_pop_general, use_corr_data_pop_unknown,
+   use_corr_data_pop_adults_model_results, use_corr_data_pop_student_model_results, use_corr_data_pop_student_model_results, use_corr_data_pop_unknown_model_results)
+```
+
+### moderator analysis
+```{r}
+use_corr_data_population <- use_corr_data %>%  filter(Population_Type != "adolescents")
+
+pop.mr <- robu(formula = yi ~ Population_Type,
+               data = use_corr_data_population, 
+               studynum = Study_ID,
+               var.eff.size = vi,
+               modelweights = "CORR",
+               small = TRUE)
+
+pop.wald <- Wald_test(obj = pop.mr, 
+                      constraints = 2:4, 
+                      vcov = "CR2")
+
+pop.wald
+rm(use_corr_data_population)
+```
+
+## Sampling/data collection design
+
+### subgroups
+```{r}
+use_corr_data_sampling_donation <- use_corr_data %>% filter(Sampling_Category == "data_donation")
+use_corr_data_sampling_tracking <- use_corr_data %>% filter(Sampling_Category == "direct_tracking")
+use_corr_data_sampling_supplied <- use_corr_data %>% filter(Sampling_Category == "supplied_data")
+
+use_corr_data_sampling_donation_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_sampling_donation)
+use_corr_data_sampling_tracking_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_sampling_tracking)
+use_corr_data_sampling_supplied_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_sampling_supplied)
+```
+
+```{r}
+use_corr_data_sampling_donation_model_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(use_corr_data_sampling_donation_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(use_corr_data_sampling_donation_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(use_corr_data_sampling_donation_model$reg_table$CI.U)),
+                                p.val = as.numeric(use_corr_data_sampling_donation_model$reg_table$prob)))
+use_corr_data_sampling_donation_model_results
+```
+
+```{r}
+use_corr_data_sampling_tracking_model_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(use_corr_data_sampling_tracking_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(use_corr_data_sampling_tracking_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(use_corr_data_sampling_tracking_model$reg_table$CI.U)),
+                                p.val = as.numeric(use_corr_data_sampling_tracking_model$reg_table$prob)))
+use_corr_data_sampling_tracking_model_results
+```
+
+```{r}
+use_corr_data_sampling_supplied_model_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(use_corr_data_sampling_supplied_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(use_corr_data_sampling_supplied_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(use_corr_data_sampling_supplied_model$reg_table$CI.U)),
+                                p.val = as.numeric(use_corr_data_sampling_supplied_model$reg_table$prob)))
+use_corr_data_sampling_supplied_model_results
+```
+
+```{r}
+rm(use_corr_data_sampling_donation, use_corr_data_sampling_donation_model_results, use_corr_data_sampling_tracking, use_corr_data_sampling_tracking_model_results, use_corr_data_sampling_supplied, use_corr_data_sampling_supplied_model_results)
+```
+
+
+### moderator analysis (3 levels = omnibus test)
+```{r}
+sampling.mr <- robu(formula = yi ~ Sampling_Category,
+               data = use_corr_data, 
+               studynum = Study_ID,
+               var.eff.size = vi,
+               modelweights = "CORR",
+               small = TRUE)
+
+sampling.wald <- Wald_test(obj = sampling.mr, 
+                      constraints = 2:3, 
+                      vcov = "CR2")
+
+sampling.wald
+```
+
+
+## Log collection method
+
+### subgroups
+```{r}
+use_corr_data_logging_built <- use_corr_data %>% filter(Log_Collection_category == "built_in")
+use_corr_data_logging_custom <- use_corr_data %>% filter(Log_Collection_category == "custom_built_for_research")
+use_corr_data_logging_operator <- use_corr_data %>% filter(Log_Collection_category == "operator")
+use_corr_data_logging_third <- use_corr_data %>% filter(Log_Collection_category == "third_party")
+
+use_corr_data_logging_built_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_logging_built)
+use_corr_data_logging_custom_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_logging_custom)
+use_corr_data_logging_operator_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_logging_operator)
+use_corr_data_logging_third_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = use_corr_data_logging_third)
+```
+
+```{r}
+use_corr_data_logging_built_model_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(use_corr_data_logging_built_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(use_corr_data_logging_built_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(use_corr_data_logging_built_model$reg_table$CI.U)),
+                                p.val = as.numeric(use_corr_data_logging_built_model$reg_table$prob)))
+use_corr_data_logging_built_model_results
+```
+
+```{r}
+use_corr_data_logging_custom_model_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(use_corr_data_logging_custom_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(use_corr_data_logging_custom_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(use_corr_data_logging_custom_model$reg_table$CI.U)),
+                                p.val = as.numeric(use_corr_data_logging_custom_model$reg_table$prob)))
+use_corr_data_logging_custom_model_results
+```
+
+```{r}
+use_corr_data_logging_operator_model_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(use_corr_data_logging_operator_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(use_corr_data_logging_operator_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(use_corr_data_logging_operator_model$reg_table$CI.U)),
+                                p.val = as.numeric(use_corr_data_logging_operator_model$reg_table$prob)))
+use_corr_data_logging_operator_model_results
+```
+
+```{r}
+use_corr_data_logging_third_model_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(use_corr_data_logging_third_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(use_corr_data_logging_third_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(use_corr_data_logging_third_model$reg_table$CI.U)),
+                                p.val = as.numeric(use_corr_data_logging_third_model$reg_table$prob)))
+use_corr_data_logging_third_model_results
+```
+
+### moderator analysis (4 levels = omnibus test)
+```{r}
+use_corr_data_log_collection_category <- use_corr_data %>%  filter(Log_Collection_category != "other")
+
+log.mr <- robu(formula = yi ~ Log_Collection_category,
+               data = use_corr_data_log_collection_category, 
+               studynum = Study_ID,
+               var.eff.size = vi,
+               modelweights = "CORR",
+               small = TRUE)
+
+log.wald <- Wald_test(obj = log.mr, 
+                      constraints = 2:4, 
+                      vcov = "CR2")
+
+log.wald
+rm(use_corr_data_log_collection_category)
+```
+
+
 ############## Section 7: RQ2: under- or over-reporting ############## 
 
 ## proportion under/accurate/over
@@ -760,6 +1010,24 @@ acc_no_outlier_model_results <- data.frame(cbind(RR = as.numeric(exp(acc_no_outl
 acc_no_outlier_model_results
 
 rm(acc_data_no_outlier, acc_no_outlier_model_results)
+```
+
+#Sensitivity analysis for correlation type (excluding sparman correlations)
+```{r}
+acc_data_no_spearman <- acc_data %>% filter(!effect_ID %in% c("P10S4C4", "P10S6C6", "P13S1C1", "P13S1C2", "P23S1C1", "P24S1C2", "P24S1C1", "P25S1C1", "P34S1C1", "P37S1C1", "P37S1C2", "P37S2C5", "P37S2C6", "P37S1C3", "P37S1C4", "P37S2C7", "P37S2C8", "P39S1C1", "P44S1C1"))
+
+acc_no_spearman_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data_no_spearman)
+
+acc_no_spearman_model #note, these have not been transformed from z to r yet.
+
+#transform
+acc_no_spearman_model_results <- data.frame(cbind(RR = as.numeric(exp(acc_no_spearman_model$reg_table$b.r)),
+                                CI.L = as.numeric(exp(acc_no_spearman_model$reg_table$CI.L)),
+                                CI.U = as.numeric(exp(acc_no_spearman_model$reg_table$CI.U)),
+                                p.val = as.numeric(acc_no_spearman_model$reg_table$prob)))
+acc_no_spearman_model_results
+
+rm(acc_data_no_spearman, acc_no_spearman_model_results) #remove redundant dataframe
 ```
 
 # sensitvity analysis for publication status:
@@ -1010,8 +1278,7 @@ rm(acc_data_duration, acc_duration_model_results)
 ```
 
 ```{r}
-acc_data_volume <- acc_data %>% 
-  filter(Measure_Type == "Volume")
+acc_data_volume <- acc_data %>% filter(Measure_Type == "Volume")
 
 acc_volume_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data_volume)
 acc_volume_model
@@ -1038,6 +1305,200 @@ acc_self_report_category_moderator_model_results <- data.frame(cbind(RR = as.num
 acc_self_report_category_moderator_model_results
 rm(acc_self_report_category_moderator_model_results)
 ```
+
+# Additional post hoc exploratory moderator analyses
+
+## Population [note dropped adolescents as only 2 ESs, dropped unknown as only 1 ES, dropped general as only 3 ESs]
+
+### subgroups
+```{r}
+acc_data_pop_adults <- acc_data %>% filter(Population_Type == "adults")
+acc_data_pop_student <- acc_data %>% filter(Population_Type == "student")
+```
+
+```{r}
+acc_data_pop_adults_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data_pop_adults)
+acc_data_pop_adults_model
+
+#back-transform
+acc_data_pop_adults_model_results <- data.frame(cbind(RR = as.numeric(exp(acc_data_pop_adults_model$reg_table$b.r)),
+                                CI.L = as.numeric(exp(acc_data_pop_adults_model$reg_table$CI.L)),
+                                CI.U = as.numeric(exp(acc_data_pop_adults_model$reg_table$CI.U)),
+                                p.val = as.numeric(acc_data_pop_adults_model$reg_table$prob)))
+acc_data_pop_adults_model_results
+```
+
+```{r}
+acc_data_pop_student_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data_pop_student)
+acc_data_pop_student_model
+
+#back-transform
+acc_data_pop_student_model_results <- data.frame(cbind(RR = as.numeric(exp(acc_data_pop_student_model$reg_table$b.r)),
+                                CI.L = as.numeric(exp(acc_data_pop_student_model$reg_table$CI.L)),
+                                CI.U = as.numeric(exp(acc_data_pop_student_model$reg_table$CI.U)),
+                                p.val = as.numeric(acc_data_pop_student_model$reg_table$prob)))
+acc_data_pop_student_model_results
+```
+
+```{r}
+rm(acc_data_pop_student_model_results, acc_data_pop_adults_model_results, acc_data_pop_student, acc_data_pop_adults)
+```
+
+### moderator analysis [normal moderator analysis]
+```{r}
+acc_data_pop <- acc_data %>% 
+  filter(Population_Type == "adults" | Population_Type == "student")
+
+acc_pop_moderator_model <- robu(formula = yi ~ Population_Type, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data_pop)
+acc_pop_moderator_model
+
+#back-transform
+acc_pop_moderator_model_results <- data.frame(cbind(RR = as.numeric(exp(acc_pop_moderator_model$reg_table$b.r)),
+                                CI.L = as.numeric(exp(acc_pop_moderator_model$reg_table$CI.L)),
+                                CI.U = as.numeric(exp(acc_pop_moderator_model$reg_table$CI.U)),
+                                p.val = as.numeric(acc_pop_moderator_model$reg_table$prob)))
+acc_pop_moderator_model_results
+```
+
+## sampling category [no dropping]
+
+### subgroups
+```{r}
+acc_data_sampling_donation <- acc_data %>% filter(Sampling_Category == "data_donation")
+acc_data_sampling_tracking <- acc_data %>% filter(Sampling_Category == "direct_tracking")
+acc_data_sampling_supplied <- acc_data %>% filter(Sampling_Category == "supplied_data")
+```
+
+```{r}
+acc_data_sampling_donation_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data_sampling_donation)
+acc_data_sampling_donation_model
+
+#back-transform
+acc_data_sampling_donation_model_results <- data.frame(cbind(RR = as.numeric(exp(acc_data_pop_student_model$reg_table$b.r)),
+                                CI.L = as.numeric(exp(acc_data_sampling_donation_model$reg_table$CI.L)),
+                                CI.U = as.numeric(exp(acc_data_sampling_donation_model$reg_table$CI.U)),
+                                p.val = as.numeric(acc_data_sampling_donation_model$reg_table$prob)))
+acc_data_sampling_donation_model_results
+```
+
+```{r}
+acc_data_sampling_tracking_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data_sampling_tracking)
+acc_data_sampling_tracking_model
+
+#back-transform
+acc_data_sampling_tracking_model_results <- data.frame(cbind(RR = as.numeric(exp(acc_data_sampling_tracking_model$reg_table$b.r)),
+                                CI.L = as.numeric(exp(acc_data_sampling_tracking_model$reg_table$CI.L)),
+                                CI.U = as.numeric(exp(acc_data_sampling_tracking_model$reg_table$CI.U)),
+                                p.val = as.numeric(acc_data_sampling_tracking_model$reg_table$prob)))
+acc_data_sampling_tracking_model_results
+```
+
+```{r}
+acc_data_sampling_supplied_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data_sampling_supplied)
+acc_data_sampling_supplied_model
+
+#back-transform
+acc_data_sampling_supplied_model_results <- data.frame(cbind(RR = as.numeric(exp(acc_data_sampling_supplied_model$reg_table$b.r)),
+                                CI.L = as.numeric(exp(acc_data_sampling_supplied_model$reg_table$CI.L)),
+                                CI.U = as.numeric(exp(acc_data_sampling_supplied_model$reg_table$CI.U)),
+                                p.val = as.numeric(acc_data_sampling_supplied_model$reg_table$prob)))
+acc_data_sampling_supplied_model_results
+```
+
+```{r}
+rm(acc_data_sampling_donation_model_results, acc_data_sampling_tracking_model_results, acc_data_sampling_supplied_model_results, acc_data_sampling_donation, acc_data_sampling_tracking, acc_data_sampling_supplied)
+```
+
+### moderator analysis
+```{r}
+sc.mr <- robu(formula = yi ~ Sampling_Category,
+               data = acc_data, 
+               studynum = Study_ID,
+               var.eff.size = vi,
+               modelweights = "CORR",
+               small = TRUE)
+
+sc.wald <- Wald_test(obj = sc.mr, 
+                      constraints = 2:3, 
+                      vcov = "CR2")
+
+sc.wald
+```
+
+## logging collection method [no dropping]
+
+### subgroups
+```{r}
+acc_data_lc_built <- acc_data %>% filter(Log_Collection_category == "built_in")
+acc_data_lc_custom <- acc_data %>% filter(Log_Collection_category == "custom_built_for_research")
+acc_data_lc_operator <- acc_data %>% filter(Log_Collection_category == "operator")
+acc_data_lc_third <- acc_data %>% filter(Log_Collection_category == "third_party")
+```
+
+```{r}
+acc_data_lc_built_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data_lc_built)
+acc_data_lc_built_model
+
+#back-transform
+acc_data_lc_built_model_results <- data.frame(cbind(RR = as.numeric(exp(acc_data_lc_built_model$reg_table$b.r)),
+                                CI.L = as.numeric(exp(acc_data_lc_built_model$reg_table$CI.L)),
+                                CI.U = as.numeric(exp(acc_data_lc_built_model$reg_table$CI.U)),
+                                p.val = as.numeric(acc_data_lc_built_model$reg_table$prob)))
+acc_data_lc_built_model_results
+```
+
+```{r}
+acc_data_lc_custom_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data_lc_custom)
+acc_data_lc_custom_model
+
+#back-transform
+acc_data_lc_custom_model_results <- data.frame(cbind(RR = as.numeric(exp(acc_data_lc_custom_model$reg_table$b.r)),
+                                CI.L = as.numeric(exp(acc_data_lc_custom_model$reg_table$CI.L)),
+                                CI.U = as.numeric(exp(acc_data_lc_custom_model$reg_table$CI.U)),
+                                p.val = as.numeric(acc_data_lc_custom_model$reg_table$prob)))
+acc_data_lc_custom_model_results
+```
+
+```{r}
+acc_data_lc_operator_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data_lc_operator)
+acc_data_lc_operator_model
+
+#back-transform
+acc_data_lc_operator_model_results <- data.frame(cbind(RR = as.numeric(exp(acc_data_lc_operator_model$reg_table$b.r)),
+                                CI.L = as.numeric(exp(acc_data_lc_operator_model$reg_table$CI.L)),
+                                CI.U = as.numeric(exp(acc_data_lc_operator_model$reg_table$CI.U)),
+                                p.val = as.numeric(acc_data_lc_operator_model$reg_table$prob)))
+acc_data_lc_operator_model_results
+```
+
+```{r}
+acc_data_lc_third_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = acc_data_lc_third)
+acc_data_lc_third_model
+
+#back-transform
+acc_data_lc_third_model_results <- data.frame(cbind(RR = as.numeric(exp(acc_data_lc_third_model$reg_table$b.r)),
+                                CI.L = as.numeric(exp(acc_data_lc_third_model$reg_table$CI.L)),
+                                CI.U = as.numeric(exp(acc_data_lc_third_model$reg_table$CI.U)),
+                                p.val = as.numeric(acc_data_lc_third_model$reg_table$prob)))
+acc_data_lc_third_model_results
+```
+
+###moderator analysis
+```{r}
+lc.mr <- robu(formula = yi ~ Log_Collection_category,
+               data = acc_data, 
+               studynum = Study_ID,
+               var.eff.size = vi,
+               modelweights = "CORR",
+               small = TRUE)
+
+lc.wald <- Wald_test(obj = lc.mr, 
+                      constraints = 2:4, 
+                      vcov = "CR2")
+
+lc.wald
+```
+
 
 ############## Section 9: H1 RE model: prob-use-correlations ############## 
 First calculate random effects model with metafor (used for visualisation). After this, use robumeta::robu to calculate model with RVE (using correlational weighting scheme).
@@ -1126,6 +1587,24 @@ Note, this does not account for RVE.
 ```{r}
 inf <- influence(h2_model)
 print(inf)
+```
+
+#Sensitivity analysis for correlation type (excluding sparman correlations)
+```{r}
+prob_use_corr_data_no_spearman <- prob_use_corr_data %>% filter(!effect_ID %in% c("P10S4C4", "P10S6C6", "P13S1C1", "P13S1C2", "P23S1C1", "P24S1C2", "P24S1C1", "P25S1C1", "P34S1C1", "P37S1C1", "P37S1C2", "P37S2C5", "P37S2C6", "P37S1C3", "P37S1C4", "P37S2C7", "P37S2C8", "P39S1C1", "P44S1C1"))
+
+prob_use_corr_data_no_spearman_model <- robu(formula = yi ~ 1, var.eff.size = vi, studynum = Study_ID, modelweights = "CORR", rho = 0.8, small = TRUE, data = prob_use_corr_data_no_spearman)
+
+prob_use_corr_data_no_spearman_model #note, these have not been transformed from z to r yet.
+
+#transform
+prob_use_corr_data_no_spearman_model_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(prob_use_corr_data_no_spearman_model$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(prob_use_corr_data_no_spearman_model$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(prob_use_corr_data_no_spearman_model$reg_table$CI.U)),
+                                p.val = as.numeric(prob_use_corr_data_no_spearman_model$reg_table$prob)))
+prob_use_corr_data_no_spearman_model_results
+
+rm(prob_use_corr_data_no_spearman, prob_use_corr_data_no_spearman_model_results) #remove redundant dataframe
 ```
 
 ## sensitvity analysis for publication status:
