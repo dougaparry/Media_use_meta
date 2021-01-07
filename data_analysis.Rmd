@@ -905,6 +905,37 @@ log.wald
 rm(use_corr_data_log_collection_category)
 ```
 
+## Final additional post hoc omnibus moderator analysis
+
+```{r}
+use_corr_data_dropped <- use_corr_data %>%  filter(medium == "Social Media" | medium == "Phone")
+
+use_omni.mr <- robu(formula = yi ~ medium + SR_Form + Measure_Type,
+               data = use_corr_data_dropped, 
+               studynum = Study_ID,
+               var.eff.size = vi,
+               modelweights = "CORR",
+               small = TRUE)
+
+use_omni.mr
+
+use_omni.mr_results <- data.frame(cbind(r = as.numeric(psych::fisherz2r(use_omni.mr$reg_table$b.r)),
+                                CI.L = as.numeric(psych::fisherz2r(use_omni.mr$reg_table$CI.L)),
+                                CI.U = as.numeric(psych::fisherz2r(use_omni.mr$reg_table$CI.U)),
+                                p.val = as.numeric(use_omni.mr$reg_table$prob)))
+use_omni.mr_results
+
+use_omni.wald <- Wald_test(obj = use_omni.mr, 
+                      constraints = 2:4, 
+                      vcov = "CR2")
+
+use_omni.wald
+```
+
+
+
+
+
 
 ############## Section 7: RQ2: under- or over-reporting ############## 
 
@@ -1499,6 +1530,32 @@ lc.wald <- Wald_test(obj = lc.mr,
 lc.wald
 ```
 
+## Final additional post hoc omnibus moderator analysis
+
+```{r}
+acc_data_dropped <- use_corr_data %>%  filter(medium == "Social Media" | medium == "Phone")
+
+acc_omni.mr <- robu(formula = yi ~ medium + Measure_Type,
+               data = acc_data_dropped, 
+               studynum = Study_ID,
+               var.eff.size = vi,
+               modelweights = "CORR",
+               small = TRUE)
+
+acc_omni.mr
+
+acc_omni.mr_results <- data.frame(cbind(RR = as.numeric(exp(acc_omni.mr$reg_table$b.r)),
+                                CI.L = as.numeric(exp(acc_omni.mr$reg_table$CI.L)),
+                                CI.U = as.numeric(exp(acc_omni.mr$reg_table$CI.U)),
+                                p.val = as.numeric(acc_omni.mr$reg_table$prob)))
+acc_omni.mr_results
+
+acc_omni.wald <- Wald_test(obj = acc_omni.mr, 
+                      constraints = 2:3, 
+                      vcov = "CR2")
+
+acc_omni.wald
+```
 
 ############## Section 9: H1 RE model: prob-use-correlations ############## 
 First calculate random effects model with metafor (used for visualisation). After this, use robumeta::robu to calculate model with RVE (using correlational weighting scheme).
