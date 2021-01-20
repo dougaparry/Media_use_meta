@@ -22,7 +22,7 @@ rm(list = ls())
 options(scipen = 999)
 set.seed(42)
 
-if (!require("pacman")) install.packages("pacman"); 
+if (!require("pacman")) install.packages("pacman");
 library(pacman)
 pacman::p_load(tidyverse, dplyr, metafor, MAc, clubSandwich, readxl, TOSTER, robumeta, psych)
 
@@ -1828,7 +1828,8 @@ dev.off()
 
 Export PDF
 ```{r}
-pdf(file='figures/combined_funnel_side_by_side.pdf', height=8, width=18)
+#pdf(file='figures/combined_funnel_side_by_side.pdf', height=8, width=18)
+quartz(type = 'pdf', file='figures/combined_funnel_side_by_side.pdf', height=8, width=18)
 
 create_side_by_side_funnel()
 
